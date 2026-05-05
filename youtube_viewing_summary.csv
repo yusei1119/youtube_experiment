@@ -1,0 +1,5 @@
+﻿participant_id,session_id,video_id,video_title,video_index,max_time_sec,duration_sec,last_current_time_sec,log_count,view_rate,completed_90,buffering,ended,page_exit,pause,play,progress,progress_25,progress_50,progress_75,progress_95,skip,video_loaded
+P001,eb317ee9-0d95-41d8-a702-4026fdb31170,DnR4nznc7_k,努力すれば完璧になる,3,10.03317309727478,10.121,10.03317309727478,10,0.9913223097791503,True,1,1,1,0,1,10,1,1,1,1,0,1
+P001,eb317ee9-0d95-41d8-a702-4026fdb31170,TRMPwwxzSJo,猫が上から落ちてくるトカゲに驚く,1,10.049175129699707,10.121,10.049175129699707,10,0.9929033820471995,True,1,1,1,0,1,10,1,1,1,1,0,1
+P001,eb317ee9-0d95-41d8-a702-4026fdb31170,TqNxa3c6V3I,3D制作を使えば，あなたも自由なアイデアを形にできます,5,7.031864843597412,15.121,7.031864843597412,7,0.4650396695719471,False,1,0,0,1,1,7,1,0,0,0,0,0
+P001,eb317ee9-0d95-41d8-a702-4026fdb31170,yIZ7AY0t6A8,野球場で野球ボールの皮を使ってハイヒールを作成,0,10.121,11.0,10.121,12,0.9200909090909092,True,1,0,1,0,1,12,1,1,1,0,0,1
