@@ -68,18 +68,14 @@ export default function WatchPage() {
   }, []);
 
   useEffect(() => {
-    async function handleBeforeUnload() {
-      await sendLog("page_exit");
-    }
-
     function beforeUnloadHandler() {
       sendLog("page_exit");
     }
-
+  
     window.addEventListener("beforeunload", beforeUnloadHandler);
+  
     return () => {
       window.removeEventListener("beforeunload", beforeUnloadHandler);
-      handleBeforeUnload();
     };
   }, [session, index, currentVideo]);
 
