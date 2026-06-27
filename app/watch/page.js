@@ -12,6 +12,7 @@ export default function WatchPage() {
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [shareCopied, setShareCopied] = useState(false);
+  const [playbackPulse, setPlaybackPulse] = useState(null);
   const [playbackProgress, setPlaybackProgress] = useState({
     current: 0,
     duration: 0,
@@ -27,6 +28,7 @@ export default function WatchPage() {
   const mountedRef = useRef(false);
   const pointerStartRef = useRef(null);
   const wheelLockedRef = useRef(false);
+  const playbackPulseTimerRef = useRef(null);
 
   const currentVideo = useMemo(() => {
     if (!session || !session.video_order || session.video_order.length === 0) {
@@ -61,6 +63,7 @@ export default function WatchPage() {
       mountedRef.current = false;
       stopProgressTracking();
       stopPlaybackTracking();
+      clearPlaybackPulse();
       destroyPlayer();
     };
   }, []);
@@ -113,6 +116,7 @@ export default function WatchPage() {
       setCommentOpen(false);
       setCommentText("");
       setShareCopied(false);
+      setPlaybackPulse(null);
       setPlaybackProgress({ current: 0, duration: 0 });
     });
 
@@ -321,6 +325,22 @@ export default function WatchPage() {
     }
   }
 
+  function clearPlaybackPulse() {
+    if (playbackPulseTimerRef.current) {
+      clearTimeout(playbackPulseTimerRef.current);
+      playbackPulseTimerRef.current = null;
+    }
+  }
+
+  function flashPlaybackPulse(nextPulse) {
+    clearPlaybackPulse();
+    setPlaybackPulse(nextPulse);
+    playbackPulseTimerRef.current = window.setTimeout(() => {
+      setPlaybackPulse(null);
+      playbackPulseTimerRef.current = null;
+    }, 320);
+  }
+
   function updatePlaybackProgress() {
     const player = playerRef.current;
     if (!player) return;
@@ -466,11 +486,13 @@ export default function WatchPage() {
 
     if (currentlyPlaying) {
       safeCall(() => playerRef.current?.pauseVideo());
+      flashPlaybackPulse("pause");
       await sendLog("tap_pause");
     } else {
       safeCall(() => playerRef.current?.unMute());
       safeCall(() => playerRef.current?.setVolume(100));
       safeCall(() => playerRef.current?.playVideo());
+      flashPlaybackPulse("play");
       await sendLog("tap_play");
     }
   }
@@ -623,6 +645,11 @@ export default function WatchPage() {
             onWheel={handleWheel}
             aria-hidden="true"
           />
+          {playbackPulse && (
+            <div className={styles.playbackPulse} aria-hidden="true">
+              {playbackPulse === "play" ? "▶" : "Ⅱ"}
+            </div>
+          )}
 
           <div className={styles.progressControl}>
             <input
@@ -643,25 +670,14 @@ export default function WatchPage() {
 
           <div className={styles.actionRail} aria-label="動画アクション">
             <button
-              className={styles.actionButton}
-              onClick={() => goPrevious("button")}
-              disabled={!playerReady || index === 0}
-              type="button"
-              title="前の動画へ"
-            >
-              <span className={styles.actionIcon}>⌃</span>
-              <span className={styles.actionLabel}>戻る</span>
-            </button>
-
-            <button
               className={`${styles.actionButton} ${liked ? styles.activeAction : ""}`}
               onClick={toggleLike}
               type="button"
               aria-pressed={liked}
               title="いいね"
             >
-              <span className={styles.actionIcon}>♥</span>
-              <span className={styles.actionLabel}>いいね</span>
+              <span className={`${styles.actionIcon} ${styles.likeIcon}`} aria-hidden="true" />
+              <span className={styles.actionLabel}>6.1万</span>
             </button>
 
             <button
@@ -671,8 +687,8 @@ export default function WatchPage() {
               aria-expanded={commentOpen}
               title="コメント"
             >
-              <span className={styles.actionIcon}>✎</span>
-              <span className={styles.actionLabel}>コメント</span>
+              <span className={`${styles.actionIcon} ${styles.commentIcon}`} aria-hidden="true" />
+              <span className={styles.actionLabel}>2,293</span>
             </button>
 
             <button
@@ -681,7 +697,7 @@ export default function WatchPage() {
               type="button"
               title="共有"
             >
-              <span className={styles.actionIcon}>↗</span>
+              <span className={`${styles.actionIcon} ${styles.shareIcon}`} aria-hidden="true" />
               <span className={styles.actionLabel}>{shareCopied ? "コピー済み" : "共有"}</span>
             </button>
 
@@ -692,9 +708,20 @@ export default function WatchPage() {
               type="button"
               title="次の動画へ"
             >
-              <span className={styles.actionIcon}>›</span>
+              <span className={`${styles.actionIcon} ${styles.nextIcon}`} aria-hidden="true" />
               <span className={styles.actionLabel}>次へ</span>
             </button>
+          </div>
+
+          <div className={styles.videoInfo}>
+            <div className={styles.channelRow}>
+              <div className={styles.avatar}>YT</div>
+              <div className={styles.channelName}>@YouTube視聴実験</div>
+              <button className={styles.subscribeButton} type="button">
+                チャンネル登録
+              </button>
+            </div>
+            <h1 className={styles.title}>{currentVideo.title}</h1>
           </div>
 
           {commentOpen && (
