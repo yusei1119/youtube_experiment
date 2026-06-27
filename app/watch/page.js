@@ -153,6 +153,7 @@ export default function WatchPage() {
       playerVars: {
         autoplay: 1,
         controls: 0,
+        mute: 1,
         rel: 0,
         modestbranding: 1,
         playsinline: 1,
@@ -177,8 +178,7 @@ export default function WatchPage() {
 
   async function handlePlayerReady() {
     setPlayerReady(true);
-    safeCall(() => playerRef.current?.unMute());
-    safeCall(() => playerRef.current?.setVolume(100));
+    safeCall(() => playerRef.current?.mute());
     safeCall(() => playerRef.current?.playVideo());
     startPlaybackTracking();
     await sendLog("video_loaded");

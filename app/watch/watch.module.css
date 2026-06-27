@@ -439,21 +439,33 @@
 
 @media (max-width: 520px) {
   .page {
+    width: 100vw;
+    min-height: 100dvh;
     padding: 0;
+    overflow: hidden;
   }
 
   .viewer {
-    width: 100%;
-    min-height: 100vh;
+    width: 100vw;
+    min-height: 100dvh;
   }
 
   .short {
-    width: 100%;
+    width: 100vw;
+    height: 100dvh;
     max-height: none;
-    min-height: 100vh;
+    min-height: 100dvh;
     border: 0;
     border-radius: 0;
     aspect-ratio: auto;
+    box-shadow: none;
+  }
+
+  .playerFrame,
+  .player,
+  .playerFrame iframe {
+    width: 100vw;
+    height: 100dvh;
   }
 
   .actionRail {
