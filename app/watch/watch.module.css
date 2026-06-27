@@ -161,11 +161,11 @@
 .actionRail {
   position: absolute;
   right: 12px;
-  bottom: 118px;
+  bottom: 92px;
   z-index: 3;
   display: grid;
   justify-items: center;
-  gap: 18px;
+  gap: 16px;
 }
 
 .actionButton {
@@ -196,6 +196,27 @@
 
 .activeAction .actionIcon {
   color: #ff3156;
+}
+
+.glyphIcon,
+.nextGlyphIcon {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.75));
+}
+
+.activeAction .glyphIcon {
+  color: #ff3156;
+}
+
+.nextGlyphIcon {
+  border: 4px solid currentColor;
+  border-radius: 999px;
+  font-size: 28px;
+  font-weight: 900;
 }
 
 .actionLabel {
@@ -470,8 +491,8 @@
 
   .actionRail {
     right: 10px;
-    bottom: 116px;
-    gap: 16px;
+    bottom: 92px;
+    gap: 14px;
   }
 
   .videoInfo {
