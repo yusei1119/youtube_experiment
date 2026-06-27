@@ -1,20 +1,32 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import styles from "./watch.module.css";
 
 export default function WatchPage() {
   const [session, setSession] = useState(null);
   const [index, setIndex] = useState(0);
   const [playerReady, setPlayerReady] = useState(false);
   const [pageLoaded, setPageLoaded] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [commentOpen, setCommentOpen] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [shareCopied, setShareCopied] = useState(false);
+  const [playbackProgress, setPlaybackProgress] = useState({
+    current: 0,
+    duration: 0,
+  });
 
   const playerRef = useRef(null);
   const progressTimerRef = useRef(null);
+  const playbackTimerRef = useRef(null);
   const quartilesSentRef = useRef(new Set());
   const maxTimeRef = useRef(0);
   const lastCurrentTimeRef = useRef(0);
   const focusedRef = useRef(true);
   const mountedRef = useRef(false);
+  const pointerStartRef = useRef(null);
+  const wheelLockedRef = useRef(false);
 
   const currentVideo = useMemo(() => {
     if (!session || !session.video_order || session.video_order.length === 0) {
@@ -34,9 +46,12 @@ export default function WatchPage() {
 
     try {
       const parsed = JSON.parse(saved);
-      setSession(parsed);
-      setIndex(parsed.current_index || 0);
-      setPageLoaded(true);
+      queueMicrotask(() => {
+        if (!mountedRef.current) return;
+        setSession(parsed);
+        setIndex(parsed.current_index || 0);
+        setPageLoaded(true);
+      });
     } catch (error) {
       console.error(error);
       window.location.href = "/";
@@ -45,6 +60,7 @@ export default function WatchPage() {
     return () => {
       mountedRef.current = false;
       stopProgressTracking();
+      stopPlaybackTracking();
       destroyPlayer();
     };
   }, []);
@@ -83,12 +99,22 @@ export default function WatchPage() {
     if (!pageLoaded || !session || !currentVideo) return;
 
     stopProgressTracking();
+    stopPlaybackTracking();
     destroyPlayer();
 
     quartilesSentRef.current = new Set();
     maxTimeRef.current = 0;
     lastCurrentTimeRef.current = 0;
-    setPlayerReady(false);
+
+    queueMicrotask(() => {
+      if (!mountedRef.current) return;
+      setPlayerReady(false);
+      setLiked(false);
+      setCommentOpen(false);
+      setCommentText("");
+      setShareCopied(false);
+      setPlaybackProgress({ current: 0, duration: 0 });
+    });
 
     initializeYouTubePlayer(currentVideo.video_id);
 
@@ -121,8 +147,8 @@ export default function WatchPage() {
       height: "640",
       videoId,
       playerVars: {
-        autoplay: 0,
-        controls: 1,
+        autoplay: 1,
+        controls: 0,
         rel: 0,
         modestbranding: 1,
         playsinline: 1,
@@ -147,7 +173,12 @@ export default function WatchPage() {
 
   async function handlePlayerReady() {
     setPlayerReady(true);
+    safeCall(() => playerRef.current?.unMute());
+    safeCall(() => playerRef.current?.setVolume(100));
+    safeCall(() => playerRef.current?.playVideo());
+    startPlaybackTracking();
     await sendLog("video_loaded");
+    await sendLog("autoplay_attempt");
   }
 
   async function handlePlayerStateChange(event) {
@@ -156,16 +187,35 @@ export default function WatchPage() {
     if (event.data === YT.PlayerState.PLAYING) {
       await sendLog("play");
       startProgressTracking();
+      startPlaybackTracking();
     } else if (event.data === YT.PlayerState.PAUSED) {
       await sendLog("pause");
       stopProgressTracking();
     } else if (event.data === YT.PlayerState.ENDED) {
       await sendLog("ended");
       stopProgressTracking();
-      await goNext();
+      await loopCurrentVideo();
     } else if (event.data === YT.PlayerState.BUFFERING) {
       await sendLog("buffering");
     }
+  }
+
+  async function loopCurrentVideo() {
+    quartilesSentRef.current = new Set();
+    maxTimeRef.current = 0;
+    lastCurrentTimeRef.current = 0;
+    setPlaybackProgress((previous) => ({
+      current: 0,
+      duration: previous.duration,
+    }));
+    safeCall(() => playerRef.current?.seekTo(0, true));
+    safeCall(() => playerRef.current?.unMute());
+    safeCall(() => playerRef.current?.setVolume(100));
+    safeCall(() => playerRef.current?.playVideo());
+    await sendLog("loop_replay", {
+      current_time_sec: 0,
+      max_time_sec: 0,
+    });
   }
 
   function startProgressTracking() {
@@ -255,6 +305,41 @@ export default function WatchPage() {
     }
   }
 
+  function startPlaybackTracking() {
+    if (playbackTimerRef.current) return;
+
+    playbackTimerRef.current = setInterval(() => {
+      updatePlaybackProgress();
+    }, 250);
+    updatePlaybackProgress();
+  }
+
+  function stopPlaybackTracking() {
+    if (playbackTimerRef.current) {
+      clearInterval(playbackTimerRef.current);
+      playbackTimerRef.current = null;
+    }
+  }
+
+  function updatePlaybackProgress() {
+    const player = playerRef.current;
+    if (!player) return;
+
+    const current = safeCall(() => player.getCurrentTime());
+    const duration = safeCall(() => player.getDuration());
+
+    if (current == null || duration == null || duration <= 0) return;
+
+    setPlaybackProgress({
+      current,
+      duration,
+    });
+  }
+
+  function getPlayerState() {
+    return safeCall(() => playerRef.current?.getPlayerState());
+  }
+
   function safeCall(fn) {
     try {
       const value = fn();
@@ -311,26 +396,7 @@ export default function WatchPage() {
     }
   }
 
-  async function goNext() {
-    const nextIndex = index + 1;
-
-    if (nextIndex >= session.video_order.length) {
-      await fetch("/api/finish", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          session_id: session.session_id,
-        }),
-      });
-
-      alert("実験は終了しました。");
-      localStorage.removeItem("youtube_experiment_session");
-      window.location.href = "/";
-      return;
-    }
-
+  function updateVideoIndex(nextIndex) {
     const updatedSession = {
       ...session,
       current_index: nextIndex,
@@ -341,70 +407,318 @@ export default function WatchPage() {
     setIndex(nextIndex);
   }
 
+  async function finishExperiment() {
+    await fetch("/api/finish", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        session_id: session.session_id,
+      }),
+    });
+
+    alert("実験は終了しました。");
+    localStorage.removeItem("youtube_experiment_session");
+    window.location.href = "/";
+  }
+
+  async function goNext(source = "button") {
+    const nextIndex = index + 1;
+
+    if (nextIndex >= session.video_order.length) {
+      await sendLog(source === "swipe" ? "swipe_next_finish" : "next_finish");
+      stopProgressTracking();
+      await finishExperiment();
+      return;
+    }
+
+    await sendLog(source === "swipe" ? "swipe_next" : "next");
+    stopProgressTracking();
+    updateVideoIndex(nextIndex);
+  }
+
+  async function goPrevious(source = "button") {
+    const previousIndex = index - 1;
+
+    if (previousIndex < 0) {
+      await sendLog(source === "swipe" ? "swipe_previous_blocked" : "previous_blocked");
+      return;
+    }
+
+    await sendLog(source === "swipe" ? "swipe_previous" : "previous");
+    stopProgressTracking();
+    updateVideoIndex(previousIndex);
+  }
+
   async function skipVideo() {
     await sendLog("skip");
     stopProgressTracking();
-    await goNext();
+    await goNext("button");
+  }
+
+  async function togglePlaybackByTap() {
+    if (!playerReady || commentOpen) return;
+
+    const playerState = getPlayerState();
+    const YT = window.YT;
+    const currentlyPlaying = playerState === YT?.PlayerState?.PLAYING;
+
+    if (currentlyPlaying) {
+      safeCall(() => playerRef.current?.pauseVideo());
+      await sendLog("tap_pause");
+    } else {
+      safeCall(() => playerRef.current?.unMute());
+      safeCall(() => playerRef.current?.setVolume(100));
+      safeCall(() => playerRef.current?.playVideo());
+      await sendLog("tap_play");
+    }
+  }
+
+  function handlePointerDown(event) {
+    if (commentOpen || !playerReady) return;
+
+    pointerStartRef.current = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      time: Date.now(),
+    };
+  }
+
+  async function handlePointerUp(event) {
+    const start = pointerStartRef.current;
+    pointerStartRef.current = null;
+
+    if (!start || start.id !== event.pointerId || commentOpen || !playerReady) return;
+
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    const elapsed = Date.now() - start.time;
+    const isTap = Math.abs(deltaX) < 12 && Math.abs(deltaY) < 12 && elapsed < 350;
+    const isVerticalSwipe = Math.abs(deltaY) > 72 && Math.abs(deltaY) > Math.abs(deltaX) * 1.25;
+
+    if (isTap) {
+      await togglePlaybackByTap();
+      return;
+    }
+
+    if (!isVerticalSwipe || elapsed > 900) return;
+
+    if (deltaY < 0) {
+      await goNext("swipe");
+    } else {
+      await goPrevious("swipe");
+    }
+  }
+
+  async function seekToProgress(event) {
+    const duration = playbackProgress.duration;
+    const nextCurrent = (Number(event.target.value) / 1000) * duration;
+
+    if (!duration || !Number.isFinite(nextCurrent)) return;
+
+    safeCall(() => playerRef.current?.seekTo(nextCurrent, true));
+    setPlaybackProgress({
+      current: nextCurrent,
+      duration,
+    });
+    lastCurrentTimeRef.current = nextCurrent;
+
+    await sendLog("scrub_seek", {
+      current_time_sec: nextCurrent,
+      duration_sec: duration,
+      progress_rate: nextCurrent / duration,
+      max_time_sec: maxTimeRef.current,
+    });
+  }
+
+  async function handleWheel(event) {
+    if (commentOpen || !playerReady || wheelLockedRef.current) return;
+    if (Math.abs(event.deltaY) < 90 || Math.abs(event.deltaY) < Math.abs(event.deltaX) * 1.5) {
+      return;
+    }
+
+    wheelLockedRef.current = true;
+    window.setTimeout(() => {
+      wheelLockedRef.current = false;
+    }, 700);
+
+    if (event.deltaY > 0) {
+      await goNext("swipe");
+    } else {
+      await goPrevious("swipe");
+    }
+  }
+
+  async function toggleLike() {
+    const nextLiked = !liked;
+    setLiked(nextLiked);
+    await sendLog(nextLiked ? "like" : "unlike");
+  }
+
+  async function toggleComments() {
+    const nextOpen = !commentOpen;
+    setCommentOpen(nextOpen);
+    await sendLog(nextOpen ? "comments_open" : "comments_close");
+  }
+
+  async function submitComment(event) {
+    event.preventDefault();
+
+    const trimmed = commentText.trim();
+    if (!trimmed) return;
+
+    await sendLog("comment_submit", {
+      comment_length: trimmed.length,
+    });
+    setCommentText("");
+    setCommentOpen(false);
+  }
+
+  async function shareVideo() {
+    const url = `https://www.youtube.com/watch?v=${currentVideo.video_id}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: currentVideo.title,
+          url,
+        });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+      }
+      setShareCopied(true);
+      window.setTimeout(() => setShareCopied(false), 1600);
+      await sendLog("share");
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        console.error(error);
+      }
+    }
   }
 
   if (!session || !currentVideo) {
-    return <main style={{ padding: 24 }}>読み込み中...</main>;
+    return <main className={styles.loading}>読み込み中...</main>;
   }
 
+  const progressValue = playbackProgress.duration
+    ? Math.min(1000, Math.max(0, (playbackProgress.current / playbackProgress.duration) * 1000))
+    : 0;
+
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#000",
-        color: "#fff",
-        display: "flex",
-        justifyContent: "center",
-        padding: 16,
-      }}
-    >
-      <div style={{ width: "100%", maxWidth: 420 }}>
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 14, opacity: 0.8 }}>
-            参加者ID: {session.participant_id}
+    <main className={styles.page}>
+      <section className={styles.viewer} aria-label="YouTube Shorts style viewer">
+        <div className={styles.short}>
+          <div className={styles.playerFrame}>
+            <div id="youtube-player" className={styles.player} />
           </div>
-          <div style={{ fontSize: 14, opacity: 0.8 }}>
-            {index + 1} / {session.video_order.length}
-          </div>
-        </div>
-
-        <h2 style={{ fontSize: 16, lineHeight: 1.5, marginBottom: 12 }}>
-          {currentVideo.title}
-        </h2>
-
-        <div
-          style={{
-            width: "100%",
-            aspectRatio: "9 / 16",
-            background: "#111",
-            borderRadius: 12,
-            overflow: "hidden",
-          }}
-        >
-          <div id="youtube-player" style={{ width: "100%", height: "100%" }} />
-        </div>
-
-        <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-          <button
-            onClick={skipVideo}
-            disabled={!playerReady}
-            style={{
-              flex: 1,
-              padding: 14,
-              borderRadius: 10,
-              border: "none",
-              fontSize: 16,
-              cursor: "pointer",
+          <div
+            className={styles.gestureLayer}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={() => {
+              pointerStartRef.current = null;
             }}
-          >
-            次の動画へ
-          </button>
+            onWheel={handleWheel}
+            aria-hidden="true"
+          />
+
+          <div className={styles.progressControl}>
+            <input
+              className={styles.progressRange}
+              type="range"
+              min="0"
+              max="1000"
+              step="1"
+              value={progressValue}
+              onChange={seekToProgress}
+              disabled={!playerReady || !playbackProgress.duration}
+              aria-label="動画の再生位置"
+              style={{
+                "--progress": `${progressValue / 10}%`,
+              }}
+            />
+          </div>
+
+          <div className={styles.actionRail} aria-label="動画アクション">
+            <button
+              className={styles.actionButton}
+              onClick={() => goPrevious("button")}
+              disabled={!playerReady || index === 0}
+              type="button"
+              title="前の動画へ"
+            >
+              <span className={styles.actionIcon}>⌃</span>
+              <span className={styles.actionLabel}>戻る</span>
+            </button>
+
+            <button
+              className={`${styles.actionButton} ${liked ? styles.activeAction : ""}`}
+              onClick={toggleLike}
+              type="button"
+              aria-pressed={liked}
+              title="いいね"
+            >
+              <span className={styles.actionIcon}>♥</span>
+              <span className={styles.actionLabel}>いいね</span>
+            </button>
+
+            <button
+              className={styles.actionButton}
+              onClick={toggleComments}
+              type="button"
+              aria-expanded={commentOpen}
+              title="コメント"
+            >
+              <span className={styles.actionIcon}>✎</span>
+              <span className={styles.actionLabel}>コメント</span>
+            </button>
+
+            <button
+              className={styles.actionButton}
+              onClick={shareVideo}
+              type="button"
+              title="共有"
+            >
+              <span className={styles.actionIcon}>↗</span>
+              <span className={styles.actionLabel}>{shareCopied ? "コピー済み" : "共有"}</span>
+            </button>
+
+            <button
+              className={styles.actionButton}
+              onClick={skipVideo}
+              disabled={!playerReady}
+              type="button"
+              title="次の動画へ"
+            >
+              <span className={styles.actionIcon}>›</span>
+              <span className={styles.actionLabel}>次へ</span>
+            </button>
+          </div>
+
+          {commentOpen && (
+            <form className={styles.commentSheet} onSubmit={submitComment}>
+              <div className={styles.commentHeader}>
+                <strong>コメント</strong>
+                <button type="button" onClick={toggleComments} className={styles.closeButton}>
+                  ×
+                </button>
+              </div>
+              <textarea
+                value={commentText}
+                onChange={(event) => setCommentText(event.target.value)}
+                className={styles.commentInput}
+                placeholder="コメントを追加"
+                rows={3}
+              />
+              <button className={styles.commentSubmit} type="submit" disabled={!commentText.trim()}>
+                送信
+              </button>
+            </form>
+          )}
         </div>
-      </div>
+      </section>
     </main>
   );
 }
