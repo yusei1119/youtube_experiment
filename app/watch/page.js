@@ -21,6 +21,7 @@ export default function WatchPage() {
     current: 0,
     duration: 0,
   });
+  const [isMuted, setIsMuted] = useState(true);
 
   const playerRef = useRef(null);
   const progressTimerRef = useRef(null);
@@ -201,6 +202,22 @@ export default function WatchPage() {
     await sendLog("autoplay_attempt");
   }
 
+  async function toggleMute() {
+    const player = playerRef.current;
+    if (!player) return;
+    const muted = safeCall(() => player.isMuted());
+    if (muted) {
+      safeCall(() => player.unMute());
+      safeCall(() => player.setVolume(100));
+      setIsMuted(false);
+      await sendLog("unmute");
+    } else {
+      safeCall(() => player.mute());
+      setIsMuted(true);
+      await sendLog("mute");
+    }
+  }
+
   async function handlePlayerStateChange(event) {
     const YT = window.YT;
 
@@ -240,6 +257,7 @@ export default function WatchPage() {
     disableCaptions();
     safeCall(() => playerRef.current?.unMute());
     safeCall(() => playerRef.current?.setVolume(100));
+    setIsMuted(false);
     safeCall(() => playerRef.current?.playVideo());
     await sendLog("loop_replay", {
       current_time_sec: 0,
@@ -441,12 +459,15 @@ export default function WatchPage() {
 
       if (playerState === YT?.PlayerState?.PLAYING) {
         autoplayRetryTimerRef.current = null;
+        const muted = safeCall(() => playerRef.current?.isMuted());
+        setIsMuted(!!muted);
         return;
       }
 
       disableCaptions();
       safeCall(() => playerRef.current?.mute());
       safeCall(() => playerRef.current?.playVideo());
+      setIsMuted(true);
       autoplayRetryTimerRef.current = null;
     }, 700);
   }
@@ -591,6 +612,7 @@ export default function WatchPage() {
       disableCaptions();
       safeCall(() => playerRef.current?.unMute());
       safeCall(() => playerRef.current?.setVolume(100));
+      setIsMuted(false);
       safeCall(() => playerRef.current?.playVideo());
       await sendLog("tap_play");
     }
@@ -760,6 +782,25 @@ export default function WatchPage() {
 
   return (
     <main className={styles.page}>
+      <div className={styles.topBar}>
+        <div className={styles.topBarBrand}>
+          <span className={styles.ytLogo}>
+            <svg viewBox="0 0 90 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="YouTube Shorts">
+              <path d="M13.4 0H6.6L0 13.4V20h6.6L13.4 6.6V0z" fill="#FF0033"/>
+              <path d="M20 0h-6.6v6.6L6.8 20H13.4L20 6.6V0z" fill="#fff"/>
+              <text x="24" y="15" fill="#fff" fontSize="13" fontWeight="800" fontFamily="sans-serif">Shorts</text>
+            </svg>
+          </span>
+        </div>
+        <div className={styles.topBarCounter}>
+          {session && (
+            <span className={styles.videoCounter}>
+              {index + 1} / {session.video_order.length}
+            </span>
+          )}
+        </div>
+      </div>
+
       <section className={styles.viewer} aria-label="YouTube Shorts style viewer">
         <div className={styles.short}>
           <div
@@ -772,6 +813,9 @@ export default function WatchPage() {
             <div className={styles.playerFrame}>
               <div id="youtube-player" className={styles.player} />
             </div>
+
+            <div className={styles.bottomGradient} aria-hidden="true" />
+
             <div
               className={styles.gestureLayer}
               onPointerDown={handlePointerDown}
@@ -786,8 +830,20 @@ export default function WatchPage() {
             />
             {playbackPulse && (
               <div className={styles.playbackPulse} aria-hidden="true">
-                {playbackPulse === "play" ? "▶" : "Ⅱ"}
+                {playbackPulse === "play" ? "▶" : "⏸"}
               </div>
+            )}
+
+            {isMuted && playerReady && (
+              <button
+                className={styles.unmuteHint}
+                onClick={toggleMute}
+                type="button"
+                aria-label="タップしてサウンドをオン"
+              >
+                <span className={styles.unmuteIcon} aria-hidden="true">🔇</span>
+                <span>タップしてサウンドをオン</span>
+              </button>
             )}
 
             <div className={styles.progressControl}>
@@ -808,6 +864,19 @@ export default function WatchPage() {
             </div>
 
             <div className={styles.actionRail} aria-label="動画アクション">
+              <button
+                className={styles.actionButton}
+                onClick={toggleMute}
+                type="button"
+                aria-label={isMuted ? "ミュート解除" : "ミュート"}
+                title={isMuted ? "ミュート解除" : "ミュート"}
+              >
+                <span className={`${styles.actionIcon} ${styles.glyphIcon}`} aria-hidden="true">
+                  {isMuted ? "🔇" : "🔊"}
+                </span>
+                <span className={styles.actionLabel}>{isMuted ? "ミュート中" : "音あり"}</span>
+              </button>
+
               <button
                 className={`${styles.actionButton} ${liked ? styles.activeAction : ""}`}
                 onClick={toggleLike}
