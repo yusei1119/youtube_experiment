@@ -1,2 +1,2 @@
-﻿participant_id,session_id,watched_video_count,mean_view_rate,total_max_view_sec,completed_90_count
-P001,eb317ee9-0d95-41d8-a702-4026fdb31170,4,0.8423390676223015,37.2352130705719,3
+﻿participant_id,session_id,watched_titles,total_videos,mean_view_sec,completion_rate,early_skip_rate,switch_per_min,view_sec_var,max_consecutive_skip,late_skip_increase,session_minutes
+P001,eb317ee9-0d95-41d8-a702-4026fdb31170,野球場で野球ボールの皮を使ってハイヒールを作成 | 猫が上から落ちてくるトカゲに驚く | どのキーボードを1つだけ選びますか？ | 努力すれば完璧になる | 横断歩道を渡れなくて困っている鹿のために止まる車 | 3D制作を使えば，あなたも自由なアイデアを形にできます,6,6.205868845095317,0.5,0.3333333333333333,5.193725979017347,24.491079726145344,1,0.0,0.9627
