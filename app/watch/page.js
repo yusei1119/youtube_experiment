@@ -12,7 +12,6 @@ export default function WatchPage() {
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [shareCopied, setShareCopied] = useState(false);
-  const [playbackPulse, setPlaybackPulse] = useState(null);
   const [playbackProgress, setPlaybackProgress] = useState({
     current: 0,
     duration: 0,
@@ -28,7 +27,6 @@ export default function WatchPage() {
   const mountedRef = useRef(false);
   const pointerStartRef = useRef(null);
   const wheelLockedRef = useRef(false);
-  const playbackPulseTimerRef = useRef(null);
   const startNextVideoWithSoundRef = useRef(false);
 
   const currentVideo = useMemo(() => {
@@ -64,7 +62,6 @@ export default function WatchPage() {
       mountedRef.current = false;
       stopProgressTracking();
       stopPlaybackTracking();
-      clearPlaybackPulse();
       destroyPlayer();
     };
   }, []);
@@ -117,7 +114,6 @@ export default function WatchPage() {
       setCommentOpen(false);
       setCommentText("");
       setShareCopied(false);
-      setPlaybackPulse(null);
       setPlaybackProgress({ current: 0, duration: 0 });
     });
 
@@ -154,10 +150,13 @@ export default function WatchPage() {
       playerVars: {
         autoplay: 1,
         controls: 0,
-        mute: 1,
+        mute: 0,
         cc_load_policy: 0,
+        disablekb: 1,
+        fs: 0,
         iv_load_policy: 3,
         rel: 0,
+        showinfo: 0,
         modestbranding: 1,
         playsinline: 1,
       },
@@ -182,13 +181,9 @@ export default function WatchPage() {
   async function handlePlayerReady() {
     setPlayerReady(true);
     disableCaptions();
-    if (startNextVideoWithSoundRef.current) {
-      safeCall(() => playerRef.current?.unMute());
-      safeCall(() => playerRef.current?.setVolume(100));
-      startNextVideoWithSoundRef.current = false;
-    } else {
-      safeCall(() => playerRef.current?.mute());
-    }
+    safeCall(() => playerRef.current?.unMute());
+    safeCall(() => playerRef.current?.setVolume(100));
+    startNextVideoWithSoundRef.current = false;
     safeCall(() => playerRef.current?.playVideo());
     startPlaybackTracking();
     await sendLog("video_loaded");
@@ -343,22 +338,6 @@ export default function WatchPage() {
     }
   }
 
-  function clearPlaybackPulse() {
-    if (playbackPulseTimerRef.current) {
-      clearTimeout(playbackPulseTimerRef.current);
-      playbackPulseTimerRef.current = null;
-    }
-  }
-
-  function flashPlaybackPulse(nextPulse) {
-    clearPlaybackPulse();
-    setPlaybackPulse(nextPulse);
-    playbackPulseTimerRef.current = window.setTimeout(() => {
-      setPlaybackPulse(null);
-      playbackPulseTimerRef.current = null;
-    }, 320);
-  }
-
   function updatePlaybackProgress() {
     const player = playerRef.current;
     if (!player) return;
@@ -506,7 +485,6 @@ export default function WatchPage() {
 
     if (currentlyPlaying) {
       safeCall(() => playerRef.current?.pauseVideo());
-      flashPlaybackPulse("pause");
       await sendLog("tap_pause");
     } else {
       disableCaptions();
@@ -665,12 +643,6 @@ export default function WatchPage() {
             onWheel={handleWheel}
             aria-hidden="true"
           />
-          {playbackPulse && (
-            <div className={styles.playbackPulse} aria-hidden="true">
-              {playbackPulse === "play" ? "▶" : "Ⅱ"}
-            </div>
-          )}
-
           <div className={styles.progressControl}>
             <input
               className={styles.progressRange}
@@ -696,9 +668,7 @@ export default function WatchPage() {
               aria-pressed={liked}
               title="いいね"
             >
-              <span className={`${styles.actionIcon} ${styles.glyphIcon}`} aria-hidden="true">
-                👍
-              </span>
+              <span className={`${styles.actionIcon} ${styles.likeIcon}`} aria-hidden="true" />
               <span className={styles.actionLabel}>6.1万</span>
             </button>
 

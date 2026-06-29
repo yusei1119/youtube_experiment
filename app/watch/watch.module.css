@@ -62,32 +62,6 @@
   cursor: grabbing;
 }
 
-.playbackPulse {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  color: rgba(255, 255, 255, 0.95);
-  font-size: 54px;
-  font-weight: 800;
-  pointer-events: none;
-  text-shadow: 0 8px 28px rgba(0, 0, 0, 0.78);
-  animation: pulseFade 320ms ease-out forwards;
-}
-
-@keyframes pulseFade {
-  from {
-    opacity: 0.95;
-    transform: scale(1);
-  }
-
-  to {
-    opacity: 0;
-    transform: scale(1.18);
-  }
-}
-
 .progressControl {
   position: absolute;
   left: 0;
@@ -192,10 +166,6 @@
   width: 42px;
   height: 42px;
   display: block;
-}
-
-.activeAction .actionIcon {
-  color: #ff3156;
 }
 
 .glyphIcon,
