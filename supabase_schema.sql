@@ -158,3 +158,9 @@ left join halves  h  on h.participant_id  = o.participant_id and h.session_id  =
 group by
   o.participant_id, o.session_id,
   mr.max_consecutive_skip, h.second_rate, h.first_rate;
+
+-- ---- PostgREST のスキーマキャッシュを再読み込み（API反映のため） ------------
+-- これが無いと、テーブル作成直後に
+--   「Could not find the table 'public.experiment_sessions' in the schema cache」
+-- が出ることがある。
+notify pgrst, 'reload schema';
