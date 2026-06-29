@@ -751,7 +751,7 @@ export default function WatchPage() {
   }
 
   if (!session || !currentVideo) {
-    return <main className={styles.loading}>読み込み中...</main>;
+    return <main className={styles.loading}>loading...</main>;
   }
 
   const progressValue = playbackProgress.duration
@@ -815,9 +815,7 @@ export default function WatchPage() {
                 aria-pressed={liked}
                 title="いいね"
               >
-                <span className={`${styles.actionIcon} ${styles.glyphIcon}`} aria-hidden="true">
-                  👍
-                </span>
+                <span className={`${styles.actionIcon} ${styles.likeIcon}`} aria-hidden="true" />
                 <span className={styles.actionLabel}>1,120</span>
               </button>
 
