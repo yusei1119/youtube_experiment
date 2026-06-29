@@ -117,7 +117,6 @@ export default function WatchPage() {
     stopPlaybackTracking();
     clearAutoplayRetry();
     clearSwipeAnimation();
-    destroyPlayer();
 
     quartilesSentRef.current = new Set();
     maxTimeRef.current = 0;
@@ -125,7 +124,6 @@ export default function WatchPage() {
 
     queueMicrotask(() => {
       if (!mountedRef.current) return;
-      setPlayerReady(false);
       setLiked(false);
       setCommentOpen(false);
       setCommentText("");
@@ -136,10 +134,33 @@ export default function WatchPage() {
       setPlaybackProgress({ current: 0, duration: 0 });
     });
 
-    initializeYouTubePlayer(currentVideo.video_id);
+    if (playerRef.current && typeof playerRef.current.loadVideoById === "function") {
+      loadNextVideo(currentVideo.video_id);
+    } else {
+      destroyPlayer();
+      queueMicrotask(() => {
+        if (!mountedRef.current) return;
+        setPlayerReady(false);
+      });
+      initializeYouTubePlayer(currentVideo.video_id);
+    }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageLoaded, session, index]);
+
+  function loadNextVideo(videoId) {
+    const player = playerRef.current;
+    disableCaptions();
+    if (audioUnlockedRef.current) {
+      safeCall(() => player.unMute());
+      safeCall(() => player.setVolume(100));
+      setIsMuted(false);
+    } else {
+      safeCall(() => player.mute());
+      setIsMuted(true);
+    }
+    safeCall(() => player.loadVideoById({ videoId, startSeconds: 0 }));
+  }
 
   function initializeYouTubePlayer(videoId) {
     if (window.YT && window.YT.Player) {
@@ -226,6 +247,7 @@ export default function WatchPage() {
     if (event.data === YT.PlayerState.PLAYING) {
       clearAutoplayRetry();
       disableCaptions();
+      setPlayerReady(true);
       await sendLog("play");
       startProgressTracking();
       startPlaybackTracking();
