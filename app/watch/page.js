@@ -22,6 +22,7 @@ export default function WatchPage() {
     duration: 0,
   });
   const [isMuted, setIsMuted] = useState(true);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
 
   const playerRef = useRef(null);
   const progressTimerRef = useRef(null);
@@ -37,6 +38,7 @@ export default function WatchPage() {
   const autoplayRetryTimerRef = useRef(null);
   const swipeAnimationTimerRef = useRef(null);
   const startNextVideoWithSoundRef = useRef(false);
+  const audioUnlockedRef = useRef(false);
 
   const currentVideo = useMemo(() => {
     if (!session || !session.video_order || session.video_order.length === 0) {
@@ -255,9 +257,11 @@ export default function WatchPage() {
     }));
     safeCall(() => playerRef.current?.seekTo(0, true));
     disableCaptions();
-    safeCall(() => playerRef.current?.unMute());
-    safeCall(() => playerRef.current?.setVolume(100));
-    setIsMuted(false);
+    if (audioUnlockedRef.current) {
+      safeCall(() => playerRef.current?.unMute());
+      safeCall(() => playerRef.current?.setVolume(100));
+      setIsMuted(false);
+    }
     safeCall(() => playerRef.current?.playVideo());
     await sendLog("loop_replay", {
       current_time_sec: 0,
@@ -449,27 +453,36 @@ export default function WatchPage() {
   function attemptAutoplay() {
     clearAutoplayRetry();
     disableCaptions();
-    safeCall(() => playerRef.current?.unMute());
-    safeCall(() => playerRef.current?.setVolume(100));
+
+    if (audioUnlockedRef.current) {
+      safeCall(() => playerRef.current?.unMute());
+      safeCall(() => playerRef.current?.setVolume(100));
+      setIsMuted(false);
+    } else {
+      safeCall(() => playerRef.current?.mute());
+      setIsMuted(true);
+    }
     safeCall(() => playerRef.current?.playVideo());
 
     autoplayRetryTimerRef.current = window.setTimeout(() => {
       const YT = window.YT;
       const playerState = getPlayerState();
-
-      if (playerState === YT?.PlayerState?.PLAYING) {
-        autoplayRetryTimerRef.current = null;
-        const muted = safeCall(() => playerRef.current?.isMuted());
-        setIsMuted(!!muted);
-        return;
+      if (playerState !== YT?.PlayerState?.PLAYING) {
+        disableCaptions();
+        safeCall(() => playerRef.current?.mute());
+        safeCall(() => playerRef.current?.playVideo());
       }
-
-      disableCaptions();
-      safeCall(() => playerRef.current?.mute());
-      safeCall(() => playerRef.current?.playVideo());
-      setIsMuted(true);
       autoplayRetryTimerRef.current = null;
     }, 700);
+  }
+
+  function unlockAudio() {
+    audioUnlockedRef.current = true;
+    setAudioUnlocked(true);
+    safeCall(() => playerRef.current?.unMute());
+    safeCall(() => playerRef.current?.setVolume(100));
+    safeCall(() => playerRef.current?.playVideo());
+    setIsMuted(false);
   }
 
   function flashPlaybackPulse(nextPulse) {
@@ -610,9 +623,11 @@ export default function WatchPage() {
       await sendLog("tap_pause");
     } else {
       disableCaptions();
-      safeCall(() => playerRef.current?.unMute());
-      safeCall(() => playerRef.current?.setVolume(100));
-      setIsMuted(false);
+      if (audioUnlockedRef.current) {
+        safeCall(() => playerRef.current?.unMute());
+        safeCall(() => playerRef.current?.setVolume(100));
+        setIsMuted(false);
+      }
       safeCall(() => playerRef.current?.playVideo());
       await sendLog("tap_play");
     }
@@ -782,25 +797,6 @@ export default function WatchPage() {
 
   return (
     <main className={styles.page}>
-      <div className={styles.topBar}>
-        <div className={styles.topBarBrand}>
-          <span className={styles.ytLogo}>
-            <svg viewBox="0 0 90 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="YouTube Shorts">
-              <path d="M13.4 0H6.6L0 13.4V20h6.6L13.4 6.6V0z" fill="#FF0033"/>
-              <path d="M20 0h-6.6v6.6L6.8 20H13.4L20 6.6V0z" fill="#fff"/>
-              <text x="24" y="15" fill="#fff" fontSize="13" fontWeight="800" fontFamily="sans-serif">Shorts</text>
-            </svg>
-          </span>
-        </div>
-        <div className={styles.topBarCounter}>
-          {session && (
-            <span className={styles.videoCounter}>
-              {index + 1} / {session.video_order.length}
-            </span>
-          )}
-        </div>
-      </div>
-
       <section className={styles.viewer} aria-label="YouTube Shorts style viewer">
         <div className={styles.short}>
           <div
@@ -834,15 +830,16 @@ export default function WatchPage() {
               </div>
             )}
 
-            {isMuted && playerReady && (
+            {!audioUnlocked && playerReady && (
               <button
-                className={styles.unmuteHint}
-                onClick={toggleMute}
+                className={styles.startOverlay}
+                onClick={unlockAudio}
                 type="button"
-                aria-label="タップしてサウンドをオン"
+                aria-label="タップして音声付きで開始"
               >
-                <span className={styles.unmuteIcon} aria-hidden="true">🔇</span>
-                <span>タップしてサウンドをオン</span>
+                <span className={styles.startIcon} aria-hidden="true">▶</span>
+                <span className={styles.startText}>タップして開始</span>
+                <span className={styles.startSub}>音声が流れます</span>
               </button>
             )}
 
@@ -864,19 +861,6 @@ export default function WatchPage() {
             </div>
 
             <div className={styles.actionRail} aria-label="動画アクション">
-              <button
-                className={styles.actionButton}
-                onClick={toggleMute}
-                type="button"
-                aria-label={isMuted ? "ミュート解除" : "ミュート"}
-                title={isMuted ? "ミュート解除" : "ミュート"}
-              >
-                <span className={`${styles.actionIcon} ${styles.glyphIcon}`} aria-hidden="true">
-                  {isMuted ? "🔇" : "🔊"}
-                </span>
-                <span className={styles.actionLabel}>{isMuted ? "ミュート中" : "音あり"}</span>
-              </button>
-
               <button
                 className={`${styles.actionButton} ${liked ? styles.activeAction : ""}`}
                 onClick={toggleLike}
