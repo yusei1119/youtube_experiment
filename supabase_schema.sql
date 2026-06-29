@@ -140,6 +140,7 @@ select
   o.participant_id,
   o.session_id,
   count(*)                                            as total_videos,        -- 総視聴本数
+  sum(o.watched_sec)                                  as total_view_sec,      -- 総視聴時間（秒）
   avg(o.watched_sec)                                  as mean_view_sec,       -- 平均視聴時間（秒）
   avg(o.completed::int)                               as completion_rate,     -- 視聴完了率
   avg(o.early_skip::int)                              as early_skip_rate,     -- 早期スキップ率
