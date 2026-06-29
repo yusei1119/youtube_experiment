@@ -897,6 +897,19 @@ export default function WatchPage() {
 
               <button
                 className={styles.actionButton}
+                onClick={() => goPrevious("button")}
+                disabled={!playerReady || index === 0}
+                type="button"
+                title="前の動画へ"
+              >
+                <span className={`${styles.actionIcon} ${styles.prevGlyphIcon}`} aria-hidden="true">
+                  ↑
+                </span>
+                <span className={styles.actionLabel}>前へ</span>
+              </button>
+
+              <button
+                className={styles.actionButton}
                 onClick={skipVideo}
                 disabled={!playerReady}
                 type="button"
