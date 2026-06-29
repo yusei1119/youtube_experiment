@@ -860,62 +860,62 @@ export default function WatchPage() {
               />
             </div>
 
-            <div className={styles.videoInfo}>
-              <div className={styles.avatar}>YT</div>
-              <div className={styles.channelName}>@YouTube視聴実験</div>
-              <h1 className={styles.title}>{currentVideo.title}</h1>
+            <div className={styles.actionRail} aria-label="動画アクション">
+              <button
+                className={`${styles.actionButton} ${liked ? styles.activeAction : ""}`}
+                onClick={toggleLike}
+                type="button"
+                aria-pressed={liked}
+                title="いいね"
+              >
+                <span className={`${styles.actionIcon} ${styles.likeIcon}`} aria-hidden="true" />
+                <span className={styles.actionLabel}>1,120</span>
+              </button>
+
+              <button
+                className={styles.actionButton}
+                onClick={toggleComments}
+                type="button"
+                aria-expanded={commentOpen}
+                title="コメント"
+              >
+                <span className={`${styles.actionIcon} ${styles.commentIcon}`} aria-hidden="true" />
+                <span className={styles.actionLabel}>2,293</span>
+              </button>
+
+              <button
+                className={styles.actionButton}
+                onClick={shareVideo}
+                type="button"
+                title="共有"
+              >
+                <span className={`${styles.actionIcon} ${styles.shareIcon}`} aria-hidden="true" />
+                <span className={styles.actionLabel}>{shareCopied ? "コピー済み" : "共有"}</span>
+              </button>
+
+              <button
+                className={styles.actionButton}
+                onClick={skipVideo}
+                disabled={!playerReady}
+                type="button"
+                title="次の動画へ"
+              >
+                <span className={`${styles.actionIcon} ${styles.nextGlyphIcon}`} aria-hidden="true">
+                  ↓
+                </span>
+                <span className={styles.actionLabel}>次へ</span>
+              </button>
             </div>
 
-            <div className={styles.bottomBar}>
-              <button className={styles.subscribeButton} type="button">
-                チャンネル登録
-              </button>
-              <div className={styles.actionRail} aria-label="動画アクション">
-                <button
-                  className={`${styles.actionButton} ${liked ? styles.activeAction : ""}`}
-                  onClick={toggleLike}
-                  type="button"
-                  aria-pressed={liked}
-                  title="いいね"
-                >
-                  <span className={`${styles.actionIcon} ${styles.likeIcon}`} aria-hidden="true" />
-                  <span className={styles.actionLabel}>1,120</span>
-                </button>
-
-                <button
-                  className={styles.actionButton}
-                  onClick={toggleComments}
-                  type="button"
-                  aria-expanded={commentOpen}
-                  title="コメント"
-                >
-                  <span className={`${styles.actionIcon} ${styles.commentIcon}`} aria-hidden="true" />
-                  <span className={styles.actionLabel}>2,293</span>
-                </button>
-
-                <button
-                  className={styles.actionButton}
-                  onClick={shareVideo}
-                  type="button"
-                  title="共有"
-                >
-                  <span className={`${styles.actionIcon} ${styles.shareIcon}`} aria-hidden="true" />
-                  <span className={styles.actionLabel}>{shareCopied ? "コピー済み" : "共有"}</span>
-                </button>
-
-                <button
-                  className={styles.actionButton}
-                  onClick={skipVideo}
-                  disabled={!playerReady}
-                  type="button"
-                  title="次の動画へ"
-                >
-                  <span className={`${styles.actionIcon} ${styles.nextGlyphIcon}`} aria-hidden="true">
-                    ↓
-                  </span>
-                  <span className={styles.actionLabel}>次へ</span>
+            <div className={styles.videoInfo}>
+              <div className={styles.channelRow}>
+                <div className={styles.avatar}>YT</div>
+                <div className={styles.channelName}>@YouTube視聴実験</div>
+                <button className={styles.subscribeButton} type="button">
+                  チャンネル登録
                 </button>
               </div>
+              <h1 className={styles.title}>{currentVideo.title}</h1>
             </div>
 
             {commentOpen && (
