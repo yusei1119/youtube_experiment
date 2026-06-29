@@ -469,7 +469,9 @@ export default function WatchPage() {
       const playerState = getPlayerState();
       if (playerState !== YT?.PlayerState?.PLAYING) {
         disableCaptions();
-        safeCall(() => playerRef.current?.mute());
+        if (!audioUnlockedRef.current) {
+          safeCall(() => playerRef.current?.mute());
+        }
         safeCall(() => playerRef.current?.playVideo());
       }
       autoplayRetryTimerRef.current = null;
