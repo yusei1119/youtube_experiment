@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./watch.module.css";
 
-const PLAYBACK_PULSE_HIDE_DELAY_MS = 10;
+const PLAYBACK_PULSE_HIDE_DELAY_MS = 0;
 
 export default function WatchPage() {
   const [session, setSession] = useState(null);

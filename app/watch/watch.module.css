@@ -213,7 +213,7 @@
   font-weight: 800;
   pointer-events: none;
   text-shadow: 0 8px 28px rgba(0, 0, 0, 0.78);
-  animation: pulseFade 120ms ease-out forwards;
+  animation: pulseFade 60ms ease-out forwards;
 }
 
 @keyframes pulseFade {
