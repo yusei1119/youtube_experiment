@@ -135,11 +135,11 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: 0;
+  bottom: 0;
   z-index: 5;
   height: 20px;
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
 }
 
 .progressRange {
@@ -230,24 +230,24 @@
 
 .actionRail {
   position: absolute;
-  right: 12px;
-  bottom: 92px;
+  right: 10px;
+  bottom: 28px;
   z-index: 3;
   display: grid;
   justify-items: center;
-  gap: 16px;
+  gap: 10px;
 }
 
 .actionButton {
-  width: 64px;
-  min-height: 62px;
+  width: 52px;
+  min-height: 50px;
   border: 0;
   background: transparent;
   color: #fff;
   cursor: pointer;
   display: grid;
   justify-items: center;
-  gap: 5px;
+  gap: 4px;
   padding: 0;
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.85);
 }
@@ -259,8 +259,8 @@
 
 .actionIcon {
   position: relative;
-  width: 42px;
-  height: 42px;
+  width: 34px;
+  height: 34px;
   display: block;
 }
 
@@ -269,7 +269,7 @@
   display: grid;
   place-items: center;
   color: #fff;
-  font-size: 34px;
+  font-size: 26px;
   line-height: 1;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.75));
 }
@@ -280,92 +280,93 @@
 
 .nextGlyphIcon,
 .prevGlyphIcon {
-  border: 4px solid currentColor;
+  border: 3px solid currentColor;
   border-radius: 999px;
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 900;
 }
 
 .actionLabel {
-  width: 68px;
+  width: 52px;
   color: #fff;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1.15;
+  text-align: center;
   overflow-wrap: anywhere;
 }
 
 .likeIcon::before {
   content: "";
   position: absolute;
-  left: 8px;
-  top: 7px;
-  width: 23px;
-  height: 25px;
-  border: 4px solid currentColor;
+  left: 5px;
+  top: 4px;
+  width: 18px;
+  height: 20px;
+  border: 3px solid currentColor;
   border-left: 0;
   border-bottom: 0;
-  border-radius: 8px 8px 7px 0;
+  border-radius: 6px 6px 5px 0;
   transform: rotate(-18deg);
 }
 
 .likeIcon::after {
   content: "";
   position: absolute;
-  left: 7px;
-  top: 21px;
-  width: 25px;
-  height: 13px;
-  border: 4px solid currentColor;
+  left: 4px;
+  top: 16px;
+  width: 20px;
+  height: 11px;
+  border: 3px solid currentColor;
   border-top: 0;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 6px 6px;
 }
 
 .commentIcon::before {
   content: "";
   position: absolute;
-  left: 7px;
-  top: 8px;
-  width: 28px;
-  height: 22px;
-  border: 4px solid currentColor;
-  border-radius: 7px;
+  left: 4px;
+  top: 5px;
+  width: 22px;
+  height: 17px;
+  border: 3px solid currentColor;
+  border-radius: 5px;
 }
 
 .commentIcon::after {
   content: "";
   position: absolute;
-  left: 15px;
-  top: 27px;
-  width: 12px;
-  height: 12px;
-  border-left: 4px solid currentColor;
-  border-bottom: 4px solid currentColor;
+  left: 10px;
+  top: 20px;
+  width: 9px;
+  height: 9px;
+  border-left: 3px solid currentColor;
+  border-bottom: 3px solid currentColor;
   transform: skew(-22deg);
 }
 
 .shareIcon::before {
   content: "";
   position: absolute;
-  left: 9px;
-  top: 16px;
-  width: 27px;
-  height: 18px;
-  border-top: 5px solid currentColor;
-  border-left: 5px solid currentColor;
-  border-radius: 13px 0 0 0;
+  left: 6px;
+  top: 12px;
+  width: 20px;
+  height: 14px;
+  border-top: 4px solid currentColor;
+  border-left: 4px solid currentColor;
+  border-radius: 10px 0 0 0;
   transform: rotate(-34deg);
 }
 
 .shareIcon::after {
   content: "";
   position: absolute;
-  right: 5px;
-  top: 7px;
-  width: 16px;
-  height: 16px;
-  border-top: 5px solid currentColor;
-  border-right: 5px solid currentColor;
+  right: 4px;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border-top: 4px solid currentColor;
+  border-right: 4px solid currentColor;
   transform: rotate(45deg);
 }
 
@@ -556,9 +557,9 @@
   }
 
   .actionRail {
-    right: 10px;
-    bottom: 92px;
-    gap: 14px;
+    right: 8px;
+    bottom: 20px;
+    gap: 8px;
   }
 
   .videoInfo {
