@@ -43,12 +43,14 @@ export default function HomePage() {
 
   return (
     <main style={{ maxWidth: 640, margin: "80px auto", padding: 24 }}>
-      <h1 style={{ fontSize: 32, marginBottom: 16 }}>YouTube視聴実験</h1>
+      <h1 style={{ fontSize: 32, marginBottom: 16 }}>ショート動画視聴実験</h1>
 
       <p style={{ lineHeight: 1.8 }}>
-        参加者IDを入力して開始してください。
+        指定された参加者IDを入力して開始してください
         <br />
-        動画順は参加者ごとにシャッフルされ、視聴ログが保存されます。
+        動画順は参加者ごとにシャッフルされ、視聴ログが保存されます
+        <br />
+        実験終了後はページをキャッシュしてください
       </p>
 
       <input
