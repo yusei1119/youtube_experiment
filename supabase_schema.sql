@@ -70,19 +70,22 @@ create index idx_logs_time       on view_logs (server_time);
 create view video_summary as
 with base as (
   select
-    participant_id,
-    session_id,
-    video_index,
-    min(video_id)    as video_id,
-    min(video_title) as video_title,
-    max(max_time_sec)  as watched_sec,   -- 最も先まで見た位置
-    max(duration_sec)  as duration_sec,
-    min(server_time)   as first_time,
-    max(server_time)   as last_time,
-    bool_or(event_type = 'ended') as has_ended,
+    l.participant_id,
+    l.session_id,
+    l.video_index,
+    min(l.video_id)    as video_id,
+    min(l.video_title) as video_title,
+    max(s.video_order -> l.video_index ->> 'category_id')    as video_category_id,
+    max(s.video_order -> l.video_index ->> 'category_title') as video_category,
+    max(l.max_time_sec)  as watched_sec,   -- 最も先まで見た位置
+    max(l.duration_sec)  as duration_sec,
+    min(l.server_time)   as first_time,
+    max(l.server_time)   as last_time,
+    bool_or(l.event_type = 'ended') as has_ended,
     count(*) as log_count
-  from view_logs
-  group by participant_id, session_id, video_index
+  from view_logs l
+  left join experiment_sessions s on s.id = l.session_id
+  group by l.participant_id, l.session_id, l.video_index
 ),
 calc as (
   select
@@ -152,7 +155,10 @@ select
   var_samp(o.watched_sec)                             as view_sec_var,        -- 視聴時間の分散
   coalesce(mr.max_consecutive_skip, 0)               as max_consecutive_skip, -- 連続スキップ長
   (h.second_rate - h.first_rate)                     as late_skip_increase,  -- 後半スキップ増加率
-  string_agg(o.video_title, ' | ' order by o.video_index) as watched_titles  -- 視聴タイトル
+  string_agg(o.video_title, ' | ' order by o.video_index) as watched_titles, -- 視聴タイトル
+  string_agg(coalesce(o.video_category, ''), ' | ' order by o.video_index)
+                                                       as watched_categories, -- 視聴カテゴリ
+  count(distinct nullif(o.video_category, ''))         as unique_category_count
 from ordered o
 left join max_run mr on mr.participant_id = o.participant_id and mr.session_id = o.session_id
 left join halves  h  on h.participant_id  = o.participant_id and h.session_id  = o.session_id
