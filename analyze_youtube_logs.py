@@ -516,7 +516,20 @@ def summarize_participant(group):
     g = group.sort_values("video_index")
     flags = g["early_skip"].tolist()
     categories = g["video_category"].fillna("").astype(str)
-    non_empty_categories = categories[categories != ""]
+    category_repeat_counts = np.where(
+        (g["watched_sec"] > 0) & (g["duration_sec"] > 0),
+        np.ceil(g["watched_sec"] / g["duration_sec"]),
+        1,
+    ).astype(int)
+    repeated_categories = pd.Series(
+        [
+            category
+            for category, repeat_count in zip(categories, category_repeat_counts)
+            for _ in range(max(repeat_count, 1))
+        ]
+    )
+    watched_categories = categories[categories != ""].drop_duplicates()
+    non_empty_categories = repeated_categories[repeated_categories != ""]
     category_counts = non_empty_categories.value_counts()
     top_category = category_counts.index[0] if len(category_counts) else ""
     top_category_rate = (
@@ -532,7 +545,7 @@ def summarize_participant(group):
 
     stats = {
             "watched_titles": " | ".join(g["video_title"].fillna("").astype(str)),
-            "watched_categories": " | ".join(categories),
+            "watched_categories": " | ".join(watched_categories),
             "unique_category_count": non_empty_categories.nunique(),
             "top_category": top_category,
             "top_category_rate": top_category_rate,
