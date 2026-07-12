@@ -29,7 +29,6 @@
     .slider-tick { width: 1px; height: 6px; background: #aaa; }
     .slider-tick.major { height: 11px; background: #374151; }
     .slider-labels { display: flex; justify-content: space-between; }
-    .slider-value { text-align: center; font-size: 1.25rem; font-weight: 700; margin-top: 8px; min-height: 1.5em; }
   </style>
 </head>
 <body>
@@ -69,7 +68,6 @@
       <div id="slider-ticks" class="slider-ticks"></div>
     </div>
     <div class="slider-labels small"><span id="slider-min-label"></span><span id="slider-max-label"></span></div>
-    <div id="slider-value" class="slider-value">未回答</div>
     <div class="buttons">
       <button id="back-button">戻る</button>
       <button id="next-button" class="primary" disabled>次へ</button>
@@ -127,7 +125,6 @@
     const sliderTicks = document.getElementById("slider-ticks");
     const sliderMinLabel = document.getElementById("slider-min-label");
     const sliderMaxLabel = document.getElementById("slider-max-label");
-    const sliderValue = document.getElementById("slider-value");
     const submitStatus = document.getElementById("submit-status");
     const finishTitle = document.getElementById("finish-title");
     const finishMessage = document.getElementById("finish-message");
@@ -217,7 +214,6 @@
       sliderMinLabel.textContent = question.minLabel;
       sliderMaxLabel.textContent = question.maxLabel;
       sliderInput.value = state.value === null ? 0 : state.value;
-      sliderValue.textContent = state.value === null ? "未回答" : String(state.value);
       nextButton.disabled = state.value === null;
       if (state.firstShownMs === null) state.firstShownMs = now - surveyStartPerfMs;
       questionVisitStartedMs = now;
@@ -391,7 +387,6 @@
         state.cumulativeLatencyMs += performance.now() - questionVisitStartedMs;
         visitFirstInputRecorded = true;
       }
-      sliderValue.textContent = sliderInput.value;
       nextButton.disabled = false;
     });
     participantIdInput.addEventListener("keydown", event => { if (event.key === "Enter") handleStart(); });
