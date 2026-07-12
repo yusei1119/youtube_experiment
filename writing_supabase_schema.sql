@@ -9,7 +9,7 @@ create table if not exists public.writing_submissions (
   survey_id text not null,
   participant_id text not null,
   video_condition text not null check (
-    video_condition in ('short_video', 'meditation_video', 'daily_video')
+    video_condition in ('short', 'med', 'control')
   ),
   questionnaire_number smallint not null check (questionnaire_number between 1 and 3),
   total_questionnaires smallint not null default 3 check (total_questionnaires = 3),
@@ -35,11 +35,22 @@ alter table public.writing_submissions
 alter table public.writing_submissions
   add column if not exists page_randomization_id text;
 
+-- 旧版の条件名を変換できるよう、旧チェック制約を先に外す。
+alter table public.writing_submissions
+  drop constraint if exists writing_submissions_video_condition_check;
+alter table public.writing_submissions
+  drop constraint if exists chk_writing_video_condition;
+
 update public.writing_submissions
 set questionnaire_number = coalesce(questionnaire_number, condition_number, 1),
     total_questionnaires = coalesce(total_questionnaires, 3),
     page_randomization_id = coalesce(page_randomization_id, assignment_seed, 'legacy'),
-    video_condition = coalesce(video_condition, 'short_video')
+    video_condition = case
+      when video_condition = 'short_video' then 'short'
+      when video_condition = 'meditation_video' then 'med'
+      when video_condition = 'daily_video' then 'control'
+      else coalesce(video_condition, 'short')
+    end
 where questionnaire_number is null
    or total_questionnaires is null
    or page_randomization_id is null
@@ -71,16 +82,10 @@ $$;
 
 do $$
 begin
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'chk_writing_video_condition'
-      and conrelid = 'public.writing_submissions'::regclass
-  ) then
-    alter table public.writing_submissions
-      add constraint chk_writing_video_condition check (
-        video_condition in ('short_video', 'meditation_video', 'daily_video')
-      );
-  end if;
+  alter table public.writing_submissions
+    add constraint chk_writing_video_condition check (
+      video_condition in ('short', 'med', 'control')
+    );
 end;
 $$;
 

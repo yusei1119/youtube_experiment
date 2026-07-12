@@ -34,14 +34,21 @@
     <p class="small">この課題は能力を判定するものではありません。何かで調べたりせず、自分の言葉で回答してください。</p>
     <label for="participant-id">実験参加者ID</label>
     <input type="text" id="participant-id" autocomplete="off" placeholder="実験参加者IDを入力してください．例: A001">
+    <div class="buttons"><button id="start-button" class="primary">次へ</button></div>
+  </div>
+
+  <div id="condition-screen" class="card hidden">
+    <div id="condition-progress" class="small"></div>
+    <h2>実験条件の選択</h2>
+    <p class="small">このアンケートの直前に視聴した動画の条件を選択してください。</p>
     <label for="video-condition">実験条件</label>
     <select id="video-condition">
       <option value="">選択してください</option>
-      <option value="short_video">ショート動画</option>
-      <option value="meditation_video">瞑想動画</option>
-      <option value="daily_video">日常動画</option>
+      <option value="short">ショート動画</option>
+      <option value="med">瞑想動画</option>
+      <option value="control">日常動画</option>
     </select>
-    <div class="buttons"><button id="start-button" class="primary">開始</button></div>
+    <div class="buttons"><button id="condition-start-button" class="primary">アンケートを開始</button></div>
   </div>
 
   <div id="question-screen" class="card hidden">
@@ -131,11 +138,14 @@
     const REST_CATEGORIES = CATEGORY_KEYS.filter(key => key !== "general");
 
     const introScreen = document.getElementById("intro-screen");
+    const conditionScreen = document.getElementById("condition-screen");
     const questionScreen = document.getElementById("question-screen");
     const finishScreen = document.getElementById("finish-screen");
     const participantIdInput = document.getElementById("participant-id");
     const videoConditionInput = document.getElementById("video-condition");
+    const conditionProgress = document.getElementById("condition-progress");
     const startButton = document.getElementById("start-button");
+    const conditionStartButton = document.getElementById("condition-start-button");
     const backButton = document.getElementById("back-button");
     const nextButton = document.getElementById("next-button");
     const submitButton = document.getElementById("submit-button");
@@ -159,6 +169,7 @@
     let surveyStartedAt = null;
     let surveyStartPerfMs = null;
     let submitted = false;
+    let questionnaireHasStarted = false;
 
     // ページを開くたびに新しくなる値。3アンケート全体のランダム割当を識別する。
     const pageRandomizationId = typeof crypto.randomUUID === "function"
@@ -227,6 +238,8 @@
 
     function initialiseQuestionnaire() {
       questions = QUESTIONNAIRES[questionnaireIndex];
+      videoCondition = "";
+      videoConditionInput.value = "";
       states = questions.map(() => ({
         answer: "",
         firstShownMs: null,
@@ -237,9 +250,10 @@
       }));
       currentIndex = 0;
       questionVisitStartedMs = null;
-      surveyStartedAt = new Date();
-      surveyStartPerfMs = performance.now();
+      surveyStartedAt = null;
+      surveyStartPerfMs = null;
       submitted = false;
+      questionnaireHasStarted = false;
       submitStatus.textContent = "";
       submitStatus.className = "small";
       submitButton.disabled = false;
@@ -277,8 +291,14 @@
     }
 
     function showOnly(screen) {
-      [introScreen, questionScreen, finishScreen].forEach(item => item.classList.add("hidden"));
+      [introScreen, conditionScreen, questionScreen, finishScreen].forEach(item => item.classList.add("hidden"));
       screen.classList.remove("hidden");
+    }
+
+    function showConditionSelection() {
+      conditionProgress.textContent = `アンケート ${questionnaireIndex + 1} / ${TOTAL_QUESTIONNAIRES}`;
+      showOnly(conditionScreen);
+      videoConditionInput.focus();
     }
 
     function handleStart() {
@@ -288,16 +308,25 @@
         participantIdInput.focus();
         return;
       }
+      participantId = value;
+      questionnaireIndex = 0;
+      initialiseQuestionnaire();
+      showConditionSelection();
+    }
+
+    function handleConditionStart() {
       const selectedCondition = videoConditionInput.value;
       if (!selectedCondition) {
         alert("実験条件を選択してください。");
         videoConditionInput.focus();
         return;
       }
-      participantId = value;
       videoCondition = selectedCondition;
-      questionnaireIndex = 0;
-      initialiseQuestionnaire();
+      if (!questionnaireHasStarted) {
+        surveyStartedAt = new Date();
+        surveyStartPerfMs = performance.now();
+        questionnaireHasStarted = true;
+      }
       showOnly(questionScreen);
       showQuestion(0);
     }
@@ -316,17 +345,8 @@
     function handleBack() {
       saveCurrentVisit();
       if (currentIndex === 0) {
-        if (questionnaireIndex > 0) {
-          alert("このアンケートの最初の質問です。");
-          showQuestion(currentIndex);
-          return;
-        }
-        if (!confirm("開始画面に戻りますか？ 入力中の回答は消去されます。")) {
-          showQuestion(currentIndex);
-          return;
-        }
-        initialiseQuestionnaire();
-        showOnly(introScreen);
+        videoConditionInput.value = videoCondition;
+        showConditionSelection();
         return;
       }
       currentIndex -= 1;
@@ -431,8 +451,7 @@
       if (!submitted || questionnaireIndex >= TOTAL_QUESTIONNAIRES - 1) return;
       questionnaireIndex += 1;
       initialiseQuestionnaire();
-      showOnly(questionScreen);
-      showQuestion(0);
+      showConditionSelection();
     }
 
     answerText.addEventListener("input", () => {
@@ -446,6 +465,7 @@
       if (event.key === "Enter") handleStart();
     });
     startButton.addEventListener("click", handleStart);
+    conditionStartButton.addEventListener("click", handleConditionStart);
     nextButton.addEventListener("click", handleNext);
     backButton.addEventListener("click", handleBack);
     finishBackButton.addEventListener("click", handleFinishBack);
