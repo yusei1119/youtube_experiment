@@ -376,6 +376,27 @@
     }
 
     function buildPayload() {
+      const responses = questions.map((question, index) => {
+        const state = states[index];
+        return {
+          question_id: question.id,
+          display_order: index + 1,
+          category_key: question.categoryKey,
+          category_label: question.category,
+          variant_number: question.variant,
+          question_text: question.prompt,
+          answer_text: state.answer,
+          answer_char_count: Array.from(state.answer).length,
+          first_shown_sec: Number((state.firstShownMs / 1000).toFixed(3)),
+          latency_to_first_input_sec: state.cumulativeLatencyMs === 0
+            ? null
+            : Number((state.cumulativeLatencyMs / 1000).toFixed(3)),
+          cumulative_duration_sec: Number((state.cumulativeResponseDurationMs / 1000).toFixed(3)),
+          visits: state.visits,
+          revision_count: state.revisionCount
+        };
+      });
+
       return {
         survey_id: SURVEY_ID,
         participant_id: participantId,
@@ -388,26 +409,9 @@
         started_at: surveyStartedAt.toISOString(),
         completed_at: new Date().toISOString(),
         total_duration_sec: Number(((performance.now() - surveyStartPerfMs) / 1000).toFixed(3)),
+        total_char_count: responses.reduce((sum, response) => sum + response.answer_char_count, 0),
         user_agent: navigator.userAgent,
-        responses: questions.map((question, index) => {
-          const state = states[index];
-          return {
-            question_id: question.id,
-            display_order: index + 1,
-            category_key: question.categoryKey,
-            category_label: question.category,
-            variant_number: question.variant,
-            question_text: question.prompt,
-            answer_text: state.answer,
-            first_shown_sec: Number((state.firstShownMs / 1000).toFixed(3)),
-            latency_to_first_input_sec: state.cumulativeLatencyMs === 0
-              ? null
-              : Number((state.cumulativeLatencyMs / 1000).toFixed(3)),
-            cumulative_duration_sec: Number((state.cumulativeResponseDurationMs / 1000).toFixed(3)),
-            visits: state.visits,
-            revision_count: state.revisionCount
-          };
-        })
+        responses
       };
     }
 

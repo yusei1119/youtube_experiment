@@ -19,6 +19,7 @@ create table if not exists public.writing_submissions (
   started_at timestamptz not null,
   completed_at timestamptz not null,
   total_duration_sec double precision not null check (total_duration_sec >= 0),
+  total_char_count integer not null check (total_char_count >= 0),
   user_agent text,
   created_at timestamptz not null default now(),
   constraint uq_writing_submission_round
@@ -34,6 +35,8 @@ alter table public.writing_submissions
   add column if not exists total_questionnaires smallint default 3;
 alter table public.writing_submissions
   add column if not exists page_randomization_id text;
+alter table public.writing_submissions
+  add column if not exists total_char_count integer;
 
 -- 旧版の条件名を変換できるよう、旧チェック制約を先に外す。
 alter table public.writing_submissions
@@ -99,6 +102,7 @@ create table if not exists public.writing_responses (
   variant_number smallint not null check (variant_number between 1 and 3),
   question_text text not null,
   answer_text text not null,
+  answer_char_count integer not null check (answer_char_count >= 0),
   first_shown_sec double precision not null check (first_shown_sec >= 0),
   latency_to_first_input_sec double precision check (latency_to_first_input_sec >= 0),
   cumulative_duration_sec double precision not null check (cumulative_duration_sec >= 0),
@@ -107,6 +111,33 @@ create table if not exists public.writing_responses (
   unique (submission_id, question_id),
   unique (submission_id, display_order)
 );
+
+alter table public.writing_responses
+  add column if not exists answer_char_count integer;
+
+update public.writing_responses
+set answer_char_count = char_length(answer_text)
+where answer_char_count is null;
+
+alter table public.writing_responses
+  alter column answer_char_count set not null;
+
+update public.writing_submissions submission
+set total_char_count = totals.total_char_count
+from (
+  select submission_id, sum(answer_char_count)::integer as total_char_count
+  from public.writing_responses
+  group by submission_id
+) totals
+where submission.id = totals.submission_id
+  and submission.total_char_count is null;
+
+update public.writing_submissions
+set total_char_count = 0
+where total_char_count is null;
+
+alter table public.writing_submissions
+  alter column total_char_count set not null;
 
 create index if not exists idx_writing_submissions_participant
   on public.writing_submissions (participant_id);
@@ -121,6 +152,10 @@ comment on column public.writing_responses.cumulative_duration_sec is
   '質問画面の表示から次へ/戻るまでの時間を訪問ごとに合算した回答時間（修正時の再訪を含む）';
 comment on column public.writing_responses.latency_to_first_input_sec is
   '各訪問で質問を表示してから最初に入力するまでの時間の合計（修正訪問を含む）';
+comment on column public.writing_responses.answer_char_count is
+  '回答のUnicode文字数（先頭末尾の空白を除き、回答内の空白・改行・句読点を含む）';
+comment on column public.writing_submissions.total_char_count is
+  '1条件5問分のanswer_char_count合計';
 
 alter table public.writing_submissions enable row level security;
 alter table public.writing_responses enable row level security;
@@ -158,7 +193,7 @@ begin
   insert into public.writing_submissions (
     survey_id, participant_id, video_condition, questionnaire_number, total_questionnaires,
     condition_number, assignment_seed, page_randomization_id,
-    started_at, completed_at, total_duration_sec, user_agent
+    started_at, completed_at, total_duration_sec, total_char_count, user_agent
   ) values (
     nullif(btrim(payload->>'survey_id'), ''),
     nullif(btrim(payload->>'participant_id'), ''),
@@ -171,13 +206,17 @@ begin
     (payload->>'started_at')::timestamptz,
     (payload->>'completed_at')::timestamptz,
     (payload->>'total_duration_sec')::double precision,
+    (
+      select sum(char_length(btrim(item->>'answer_text')))::integer
+      from jsonb_array_elements(payload->'responses') as item
+    ),
     payload->>'user_agent'
   )
   returning id into new_submission_id;
 
   insert into public.writing_responses (
     submission_id, question_id, display_order, category_key, category_label,
-    variant_number, question_text, answer_text, first_shown_sec,
+    variant_number, question_text, answer_text, answer_char_count, first_shown_sec,
     latency_to_first_input_sec, cumulative_duration_sec, visits, revision_count
   )
   select
@@ -189,6 +228,7 @@ begin
     (item->>'variant_number')::smallint,
     nullif(item->>'question_text', ''),
     nullif(btrim(item->>'answer_text'), ''),
+    char_length(nullif(btrim(item->>'answer_text'), '')),
     (item->>'first_shown_sec')::double precision,
     nullif(item->>'latency_to_first_input_sec', '')::double precision,
     (item->>'cumulative_duration_sec')::double precision,
