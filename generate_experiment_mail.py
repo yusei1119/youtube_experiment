@@ -31,9 +31,8 @@ TRAILER_SELECTION = {
     "daily": 3,
 }
 
-# 日常動画と理解度テストの番号（1〜10）
-DAILY_VIDEO_SELECTION = 1
-COMPREHENSION_TEST_SELECTION = 1
+# 日常動画と理解度テストで共通して使用する番号（1〜10）
+DAILY_MATERIAL_SELECTION = 1
 
 
 # =============================================================================
@@ -168,10 +167,10 @@ def make_meditation_block() -> str:
 
 
 def make_daily_block() -> str:
-    daily_url = get_url(DAILY_VIDEO_URLS, DAILY_VIDEO_SELECTION, "日常動画")
+    daily_url = get_url(DAILY_VIDEO_URLS, DAILY_MATERIAL_SELECTION, "日常動画")
     test_url = get_url(
         COMPREHENSION_TEST_URLS,
-        COMPREHENSION_TEST_SELECTION,
+        DAILY_MATERIAL_SELECTION,
         "理解度テスト",
     )
 

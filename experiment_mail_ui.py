@@ -26,10 +26,7 @@ class ExperimentMailUI:
             key: tk.StringVar(value=str(mail.TRAILER_SELECTION[key]))
             for key in CONDITION_KEYS
         }
-        self.daily_video = tk.StringVar(value=str(mail.DAILY_VIDEO_SELECTION))
-        self.comprehension_test = tk.StringVar(
-            value=str(mail.COMPREHENSION_TEST_SELECTION)
-        )
+        self.daily_material = tk.StringVar(value=str(mail.DAILY_MATERIAL_SELECTION))
         self.status = tk.StringVar(value="設定を選び、「本文を生成」を押してください。")
 
         self._configure_style()
@@ -126,25 +123,21 @@ class ExperimentMailUI:
             row=next_row, column=0, columnspan=3, sticky="w", pady=(18, 4)
         )
         daily_numbers = [str(number) for number in mail.DAILY_VIDEO_URLS]
-        test_numbers = [str(number) for number in mail.COMPREHENSION_TEST_URLS]
-        ttk.Label(controls, text="日常動画").grid(row=next_row + 1, column=0, sticky="w")
+        ttk.Label(controls, text="動画・テスト番号").grid(
+            row=next_row + 1, column=0, sticky="w"
+        )
         ttk.Combobox(
             controls,
-            textvariable=self.daily_video,
+            textvariable=self.daily_material,
             values=daily_numbers,
             state="readonly",
             width=8,
         ).grid(row=next_row + 1, column=1, sticky="w", pady=4)
-        ttk.Label(controls, text="理解度テスト").grid(
-            row=next_row + 2, column=0, sticky="w"
-        )
-        ttk.Combobox(
+        ttk.Label(
             controls,
-            textvariable=self.comprehension_test,
-            values=test_numbers,
-            state="readonly",
-            width=8,
-        ).grid(row=next_row + 2, column=1, sticky="w", pady=4)
+            text="日常動画と理解度テストに同じ番号を使用",
+            style="Hint.TLabel",
+        ).grid(row=next_row + 2, column=0, columnspan=3, sticky="w", pady=(2, 0))
 
         ttk.Button(controls, text="本文を生成", command=self.generate).grid(
             row=next_row + 3, column=0, columnspan=3, sticky="ew", pady=(24, 8)
@@ -192,8 +185,7 @@ class ExperimentMailUI:
         mail.TRAILER_SELECTION = {
             key: int(variable.get()) for key, variable in self.trailer_vars.items()
         }
-        mail.DAILY_VIDEO_SELECTION = int(self.daily_video.get())
-        mail.COMPREHENSION_TEST_SELECTION = int(self.comprehension_test.get())
+        mail.DAILY_MATERIAL_SELECTION = int(self.daily_material.get())
 
     def move_order(self, position: int, direction: int) -> None:
         """条件を上下へ移動し、変更後の順序で本文を即時更新する。"""
