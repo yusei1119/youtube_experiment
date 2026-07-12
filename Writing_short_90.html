@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>記述課題（ショート動画視聴後）</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; }
+    body { max-width: 780px; margin: 24px auto 40px; padding: 0 16px; line-height: 1.65; font-size: 16px; color: #1f2937; }
+    h1 { margin-bottom: .4em; }
+    h2 { margin: .2em 0 .7em; font-size: 1.15rem; }
+    .card { border: 1px solid #d1d5db; border-radius: 10px; padding: 18px 20px; margin: 12px 0 20px; background: #fafafa; }
+    label { font-weight: 650; display: block; margin-bottom: 5px; }
+    input[type="text"], textarea { width: 100%; box-sizing: border-box; padding: 10px; font: inherit; border: 1px solid #9ca3af; border-radius: 5px; background: white; }
+    input[type="text"] { margin-bottom: 12px; }
+    textarea { min-height: 220px; line-height: 1.65; resize: vertical; }
+    button { padding: 9px 18px; font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid #6b7280; background: #f5f5f5; }
+    button.primary { background: #2563eb; border-color: #2563eb; color: white; }
+    button:disabled { opacity: .5; cursor: default; }
+    .buttons { margin-top: 16px; display: flex; gap: 9px; justify-content: flex-end; flex-wrap: wrap; }
+    .center-buttons { justify-content: center; gap: 20px; }
+    .small { font-size: .88rem; color: #4b5563; }
+    .category { display: inline-block; margin: 5px 0 8px; padding: 2px 9px; border-radius: 999px; background: #e0ecff; color: #1e40af; font-size: .83rem; font-weight: 650; }
+    .hidden { display: none; }
+    .error { color: #b91c1c; }
+    .success { color: #166534; }
+  </style>
+</head>
+<body>
+  <h1>記述課題</h1>
+
+  <div id="intro-screen" class="card">
+    <h2>はじめに</h2>
+    <p class="small">この課題は能力を判定するものではありません。何かで調べたりせず、自分の言葉で回答してください。</p>
+    <label for="participant-id">実験参加者ID</label>
+    <input type="text" id="participant-id" autocomplete="off" placeholder="実験参加者IDを入力してください">
+    <div class="buttons"><button id="start-button" class="primary">開始</button></div>
+  </div>
+
+  <div id="question-screen" class="card hidden">
+    <div id="progress-label" class="small"></div>
+    <div id="category-label" class="category"></div>
+    <h2 id="question-text"></h2>
+    <label for="answer-text" class="small">自由記述でお答えください</label>
+    <textarea id="answer-text"></textarea>
+    <div class="buttons">
+      <button id="back-button">戻る</button>
+      <button id="next-button" class="primary" disabled>次へ</button>
+    </div>
+  </div>
+
+  <div id="finish-screen" class="card hidden">
+    <h2 id="finish-title">回答の確認</h2>
+    <p id="finish-message">このアンケートの全ての質問に回答しました。必要であれば「戻る」で確認・修正してから、「送信」を押してください。</p>
+    <div id="submit-status" class="small" aria-live="polite"></div>
+    <div class="buttons center-buttons">
+      <button id="finish-back-button">戻る</button>
+      <button id="submit-button" class="primary">送信</button>
+      <button id="continue-button" class="primary hidden">次のアンケートへ</button>
+    </div>
+  </div>
+
+  <script>
+    "use strict";
+
+    // Supabase の Project URL と anon (publishable) key を設定してください。
+    // service_role key は絶対にHTMLへ記載しないでください。
+    const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+    const SURVEY_ID = "writing_short_90";
+    const TOTAL_QUESTIONNAIRES = 3;
+
+    // 各カテゴリに固有の3候補を用意する。下の buildConditionSets() により、
+    // 各候補は3条件のいずれか1つだけに割り当てられる。
+    const QUESTION_VARIANTS = {
+      general: {
+        label: "一般",
+        questionNumber: 1,
+        prompts: [
+          "なぜ人の人生には映画が必要だと思いますか？",
+          "映画を見るという行為によって、あなたは何を失いますか？",
+          "「映像を観る」という体験は、あなたの世界をどのように拡張、あるいは制限すると思いますか？"
+        ]
+      },
+      content: {
+        label: "内容",
+        questionNumber: 2,
+        prompts: [
+          "先ほどの映像の中で、「何が正しい生き方なのか」についてあなたの考えを教えてください。",
+          "先ほどの映像は、人のどのような部分を映し出していると思いますか？",
+          "先ほどの映像では、登場人物のどのような選択や葛藤が描かれていたと思いますか？"
+        ]
+      },
+      inquiry: {
+        label: "問い",
+        questionNumber: 3,
+        prompts: [
+          "先ほどの映像の制作者があなたに残した「問い」は何だと思いますか？",
+          "先ほどの映像が描こうとしている最も根本的な問いは何だと思いますか？",
+          "先ほどの映像を通して、制作者はあなたにどのような「問い」を残しましたか？"
+        ]
+      },
+      emotion: {
+        label: "感情",
+        questionNumber: 4,
+        prompts: [
+          "先ほどの映像を観た後、あなたは最後にどのような感情が残りましたか？ 経緯を追って説明してください。",
+          "「心が動く」とは、それまでの自分の見方や感じ方が揺さぶられる現象とも言えます。そのような揺らぎは、あなたの内側でどのような変化として現れると思いますか？",
+          "先ほどの映像を観ている間に、あなたの気持ちはどのように変化しましたか？ 印象に残った場面とあわせて説明してください。"
+        ]
+      },
+      summary: {
+        label: "要約",
+        questionNumber: 5,
+        prompts: [
+          "先ほどの映像を一文で表すと、どのような物語になりますか？",
+          "先ほどの映像で起きたことを、映像を観ていない人にも伝わる一文で要約してください。",
+          "先ほどの映像の中心的な出来事や意味を、一文でまとめてください。"
+        ]
+      }
+    };
+
+    const CATEGORY_KEYS = Object.keys(QUESTION_VARIANTS);
+    const REST_CATEGORIES = CATEGORY_KEYS.filter(key => key !== "general");
+
+    const introScreen = document.getElementById("intro-screen");
+    const questionScreen = document.getElementById("question-screen");
+    const finishScreen = document.getElementById("finish-screen");
+    const participantIdInput = document.getElementById("participant-id");
+    const startButton = document.getElementById("start-button");
+    const backButton = document.getElementById("back-button");
+    const nextButton = document.getElementById("next-button");
+    const submitButton = document.getElementById("submit-button");
+    const continueButton = document.getElementById("continue-button");
+    const finishBackButton = document.getElementById("finish-back-button");
+    const progressLabel = document.getElementById("progress-label");
+    const categoryLabel = document.getElementById("category-label");
+    const questionText = document.getElementById("question-text");
+    const answerText = document.getElementById("answer-text");
+    const submitStatus = document.getElementById("submit-status");
+    const finishTitle = document.getElementById("finish-title");
+    const finishMessage = document.getElementById("finish-message");
+
+    let participantId = "";
+    let questionnaireIndex = 0;
+    let questions = [];
+    let states = [];
+    let currentIndex = 0;
+    let questionVisitStartedMs = null;
+    let surveyStartedAt = null;
+    let surveyStartPerfMs = null;
+    let submitted = false;
+
+    // ページを開くたびに新しくなる値。3アンケート全体のランダム割当を識別する。
+    const pageRandomizationId = typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    // 文字列から再現可能な32bitハッシュを作る。
+    function hashString(value) {
+      let hash = 2166136261;
+      for (let i = 0; i < value.length; i += 1) {
+        hash ^= value.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return hash >>> 0;
+    }
+
+    function mulberry32(seed) {
+      return function random() {
+        let t = seed += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function shuffled(values, seedText) {
+      const result = [...values];
+      const random = mulberry32(hashString(seedText));
+      for (let i = result.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+
+    function buildQuestionnaires() {
+      const sets = Array.from({ length: TOTAL_QUESTIONNAIRES }, () => []);
+      for (const categoryKey of CATEGORY_KEYS) {
+        const category = QUESTION_VARIANTS[categoryKey];
+        // 3候補をシャッフルして1回ずつ使うため、同じカテゴリ内で重複しない。
+        const variantOrder = shuffled([0, 1, 2], `${pageRandomizationId}:${categoryKey}`);
+        for (let roundIndex = 0; roundIndex < TOTAL_QUESTIONNAIRES; roundIndex += 1) {
+          const variantIndex = variantOrder[roundIndex];
+          sets[roundIndex].push({
+            id: `${categoryKey}_v${variantIndex + 1}`,
+            categoryKey,
+            category: category.label,
+            variant: variantIndex + 1,
+            prompt: `Q${category.questionNumber}. ${category.prompts[variantIndex]}`
+          });
+        }
+      }
+      return sets.map((set, roundIndex) => {
+        const selectedByCategory = Object.fromEntries(
+          set.map(question => [question.categoryKey, question])
+        );
+        const categoryOrder = [
+          "general",
+          ...shuffled(REST_CATEGORIES, `${pageRandomizationId}:order:${roundIndex}`)
+        ];
+        return categoryOrder.map(key => selectedByCategory[key]);
+      });
+    }
+
+    const QUESTIONNAIRES = buildQuestionnaires();
+
+    function initialiseQuestionnaire() {
+      questions = QUESTIONNAIRES[questionnaireIndex];
+      states = questions.map(() => ({
+        answer: "",
+        firstShownMs: null,
+        firstInputMs: null,
+        cumulativeDurationMs: 0,
+        visits: 0,
+        revisionCount: 0
+      }));
+      currentIndex = 0;
+      questionVisitStartedMs = null;
+      surveyStartedAt = new Date();
+      surveyStartPerfMs = performance.now();
+      submitted = false;
+      submitStatus.textContent = "";
+      submitStatus.className = "small";
+      submitButton.disabled = false;
+      finishBackButton.disabled = false;
+      continueButton.classList.add("hidden");
+    }
+
+    function showQuestion(index) {
+      const question = questions[index];
+      const state = states[index];
+      const now = performance.now();
+      progressLabel.textContent = `アンケート ${questionnaireIndex + 1} / ${TOTAL_QUESTIONNAIRES} ・ 質問 ${index + 1} / ${questions.length}`;
+      categoryLabel.textContent = question.category;
+      questionText.textContent = question.prompt;
+      answerText.value = state.answer;
+      if (state.firstShownMs === null) state.firstShownMs = now - surveyStartPerfMs;
+      questionVisitStartedMs = now;
+      updateNextButton();
+      answerText.focus();
+    }
+
+    function saveCurrentVisit() {
+      if (questionVisitStartedMs === null || !states[currentIndex]) return;
+      const state = states[currentIndex];
+      const answer = answerText.value.trim();
+      if (state.answer && state.answer !== answer) state.revisionCount += 1;
+      state.answer = answer;
+      state.cumulativeDurationMs += performance.now() - questionVisitStartedMs;
+      state.visits += 1;
+      questionVisitStartedMs = null;
+    }
+
+    function updateNextButton() {
+      nextButton.disabled = answerText.value.trim().length === 0;
+    }
+
+    function showOnly(screen) {
+      [introScreen, questionScreen, finishScreen].forEach(item => item.classList.add("hidden"));
+      screen.classList.remove("hidden");
+    }
+
+    function handleStart() {
+      const value = participantIdInput.value.trim();
+      if (!value) {
+        alert("実験参加者IDを入力してください。");
+        participantIdInput.focus();
+        return;
+      }
+      participantId = value;
+      questionnaireIndex = 0;
+      initialiseQuestionnaire();
+      showOnly(questionScreen);
+      showQuestion(0);
+    }
+
+    function handleNext() {
+      if (nextButton.disabled) return;
+      saveCurrentVisit();
+      if (currentIndex < questions.length - 1) {
+        currentIndex += 1;
+        showQuestion(currentIndex);
+      } else {
+        showOnly(finishScreen);
+      }
+    }
+
+    function handleBack() {
+      saveCurrentVisit();
+      if (currentIndex === 0) {
+        if (questionnaireIndex > 0) {
+          alert("このアンケートの最初の質問です。");
+          showQuestion(currentIndex);
+          return;
+        }
+        if (!confirm("開始画面に戻りますか？ 入力中の回答は消去されます。")) {
+          showQuestion(currentIndex);
+          return;
+        }
+        initialiseQuestionnaire();
+        showOnly(introScreen);
+        return;
+      }
+      currentIndex -= 1;
+      showQuestion(currentIndex);
+    }
+
+    function handleFinishBack() {
+      if (submitted) return;
+      currentIndex = questions.length - 1;
+      showOnly(questionScreen);
+      showQuestion(currentIndex);
+    }
+
+    function buildPayload() {
+      return {
+        survey_id: SURVEY_ID,
+        participant_id: participantId,
+        questionnaire_number: questionnaireIndex + 1,
+        total_questionnaires: TOTAL_QUESTIONNAIRES,
+        condition_number: questionnaireIndex + 1,
+        assignment_seed: pageRandomizationId,
+        page_randomization_id: pageRandomizationId,
+        started_at: surveyStartedAt.toISOString(),
+        completed_at: new Date().toISOString(),
+        total_duration_sec: Number(((performance.now() - surveyStartPerfMs) / 1000).toFixed(3)),
+        user_agent: navigator.userAgent,
+        responses: questions.map((question, index) => {
+          const state = states[index];
+          return {
+            question_id: question.id,
+            display_order: index + 1,
+            category_key: question.categoryKey,
+            category_label: question.category,
+            variant_number: question.variant,
+            question_text: question.prompt,
+            answer_text: state.answer,
+            first_shown_sec: Number((state.firstShownMs / 1000).toFixed(3)),
+            latency_to_first_input_sec: state.firstInputMs === null
+              ? null
+              : Number(((state.firstInputMs - state.firstShownMs) / 1000).toFixed(3)),
+            cumulative_duration_sec: Number((state.cumulativeDurationMs / 1000).toFixed(3)),
+            visits: state.visits,
+            revision_count: state.revisionCount
+          };
+        })
+      };
+    }
+
+    async function sendToSupabase(payload) {
+      if (SUPABASE_URL.includes("YOUR_PROJECT") || SUPABASE_ANON_KEY.includes("YOUR_")) {
+        throw new Error("HTML内のSUPABASE_URLとSUPABASE_ANON_KEYを設定してください。");
+      }
+      const response = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/rpc/submit_writing_survey`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ payload })
+      });
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(`Supabaseへの保存に失敗しました (${response.status}): ${detail}`);
+      }
+      return response.json();
+    }
+
+    async function handleSubmit() {
+      if (submitted) return;
+      if (states.some(state => !state.answer)) {
+        alert("未回答の質問があります。");
+        return;
+      }
+      submitButton.disabled = true;
+      finishBackButton.disabled = true;
+      submitStatus.className = "small";
+      submitStatus.textContent = "送信中です。この画面を閉じずにお待ちください。";
+      try {
+        await sendToSupabase(buildPayload());
+        submitted = true;
+        submitStatus.className = "small success";
+        if (questionnaireIndex < TOTAL_QUESTIONNAIRES - 1) {
+          submitStatus.textContent = `アンケート${questionnaireIndex + 1}を送信しました。「次のアンケートへ」を押してください。`;
+          continueButton.classList.remove("hidden");
+        } else {
+          finishTitle.textContent = "全アンケート完了";
+          finishMessage.textContent = "3つ全てのアンケートの送信が完了しました。";
+          submitStatus.textContent = "ご協力ありがとうございました。";
+        }
+      } catch (error) {
+        console.error(error);
+        submitStatus.className = "small error";
+        submitStatus.textContent = `送信できませんでした。実験者にお知らせください。${error.message}`;
+        submitButton.disabled = false;
+        finishBackButton.disabled = false;
+      }
+    }
+
+    function handleContinue() {
+      if (!submitted || questionnaireIndex >= TOTAL_QUESTIONNAIRES - 1) return;
+      questionnaireIndex += 1;
+      initialiseQuestionnaire();
+      showOnly(questionScreen);
+      showQuestion(0);
+    }
+
+    answerText.addEventListener("input", () => {
+      const state = states[currentIndex];
+      if (state && state.firstInputMs === null) {
+        state.firstInputMs = performance.now() - surveyStartPerfMs;
+      }
+      updateNextButton();
+    });
+    participantIdInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") handleStart();
+    });
+    startButton.addEventListener("click", handleStart);
+    nextButton.addEventListener("click", handleNext);
+    backButton.addEventListener("click", handleBack);
+    finishBackButton.addEventListener("click", handleFinishBack);
+    submitButton.addEventListener("click", handleSubmit);
+    continueButton.addEventListener("click", handleContinue);
+  </script>
+</body>
+</html>
