@@ -39,7 +39,8 @@
     <p class="small">直前の動画視聴タスクについて回答してください。このファイルはダウンロード後、Chrome・Edge・Safariなどのブラウザで開いてください。送信にはインターネット接続が必要です。</p>
     <div id="browser-warning" class="small error hidden"></div>
     <label for="participant-id">実験参加者ID</label>
-    <input type="text" id="participant-id" autocomplete="off" placeholder="実験参加者IDを入力してください。例: A001">
+    <input type="text" id="participant-id" autocomplete="off" placeholder="例: A001（再回答の場合: A001-v2）">
+    <p class="small">送信失敗などで最初から回答し直す場合は、元のIDの末尾に <code>-v2</code>、<code>-v3</code> のように付けてください。</p>
     <div class="buttons"><button id="start-button" class="primary">次へ</button></div>
   </div>
 
@@ -368,7 +369,10 @@
       } catch (error) {
         console.error(error);
         submitStatus.className = "small error";
-        submitStatus.textContent = `送信できませんでした。実験者にお知らせください。${error.message}`;
+        const retryHint = /already|duplicate|unique/i.test(error.message)
+          ? "同じIDの回答が既に保存されています。最初からやり直す場合は、参加者IDを A001-v2 のように変更してください。"
+          : "接続を確認して、もう一度「送信」を押してください。";
+        submitStatus.textContent = `送信できませんでした。${retryHint} ${error.message}`;
         submitButton.disabled = false;
         finishBackButton.disabled = false;
       }
