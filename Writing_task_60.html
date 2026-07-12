@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>記述タスク</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; }
+    body { max-width: 780px; margin: 24px auto 40px; padding: 0 16px; line-height: 1.65; font-size: 16px; color: #1f2937; }
+    h1 { margin-bottom: .4em; }
+    h2 { margin: .2em 0 .7em; font-size: 1.15rem; }
+    .card { border: 1px solid #d1d5db; border-radius: 10px; padding: 18px 20px; margin: 12px 0 20px; background: #fafafa; }
+    label { font-weight: 650; display: block; margin-bottom: 5px; }
+    input[type="text"], select, textarea { width: 100%; box-sizing: border-box; padding: 10px; font: inherit; border: 1px solid #9ca3af; border-radius: 5px; background: white; }
+    input[type="text"], select { margin-bottom: 12px; }
+    textarea { min-height: 220px; line-height: 1.65; resize: vertical; }
+    button { padding: 9px 18px; font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid #6b7280; background: #f5f5f5; }
+    button.primary { background: #2563eb; border-color: #2563eb; color: white; }
+    button:disabled { opacity: .5; cursor: default; }
+    .buttons { margin-top: 16px; display: flex; gap: 9px; justify-content: flex-end; flex-wrap: wrap; }
+    .center-buttons { justify-content: center; gap: 20px; }
+    .small { font-size: .88rem; color: #4b5563; }
+    .category { display: inline-block; margin: 5px 0 8px; padding: 2px 9px; border-radius: 999px; background: #e0ecff; color: #1e40af; font-size: .83rem; font-weight: 650; }
+    .hidden { display: none; }
+    .error { color: #b91c1c; }
+    .success { color: #166534; }
+  </style>
+</head>
+<body>
+  <h1>記述タスク</h1>
+
+  <div id="intro-screen" class="card">
+    <h2>はじめに</h2>
+    <p class="small">この課題は能力を判定するものではありません。何かで調べたりせず、自分の言葉で回答してください。</p>
+    <p class="small">このファイルはダウンロード後、Chrome・Edge・Safariなどのブラウザで開いてください。回答の送信にはインターネット接続が必要です。</p>
+    <div id="browser-warning" class="small error hidden"></div>
+    <label for="participant-id">実験参加者ID</label>
+    <input type="text" id="participant-id" autocomplete="off" placeholder="実験参加者IDを入力してください．例: A001">
+    <div class="buttons"><button id="start-button" class="primary">次へ</button></div>
+  </div>
+
+  <div id="duration-screen" class="card hidden">
+    <h2>ショート動画の視聴時間</h2>
+    <p class="small">前の手順で視聴したショート動画の視聴時間を選択してください。</p>
+    <label for="viewing-duration">前の手順で視聴したショート動画の視聴時間</label>
+    <select id="viewing-duration">
+      <option value="">選択してください</option>
+      <option value="5min">5分</option>
+      <option value="10min">10分</option>
+      <option value="15min">15分</option>
+      <option value="20min">20分</option>
+      <option value="25min">25分</option>
+      <option value="30min">30分</option>
+    </select>
+    <div class="buttons"><button id="duration-start-button" class="primary">アンケートを開始</button></div>
+  </div>
+
+  <div id="question-screen" class="card hidden">
+    <div id="progress-label" class="small"></div>
+    <div id="category-label" class="category"></div>
+    <h2 id="question-text"></h2>
+    <label for="answer-text" class="small">自由記述でお答えください</label>
+    <textarea id="answer-text"></textarea>
+    <div class="buttons">
+      <button id="back-button">戻る</button>
+      <button id="next-button" class="primary" disabled>次へ</button>
+    </div>
+  </div>
+
+  <div id="finish-screen" class="card hidden">
+    <h2 id="finish-title">回答の確認</h2>
+    <p id="finish-message">このアンケートの全ての質問に回答しました。必要であれば「戻る」で確認・修正してから、「送信」を押してください。</p>
+    <div id="submit-status" class="small" aria-live="polite"></div>
+    <div class="buttons center-buttons">
+      <button id="finish-back-button">戻る</button>
+      <button id="submit-button" class="primary">送信</button>
+    </div>
+  </div>
+
+  <script>
+    "use strict";
+
+    // Supabase の Project URL と anon (publishable) key を設定してください。
+    // service_role key は絶対にHTMLへ記載しないでください。
+    const SUPABASE_URL = "https://izilkytvtjzpdsbyznsj.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6aWxreXR2dGp6cGRzYnl6bnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTY1NDksImV4cCI6MjA5MzU3MjU0OX0.LQNatdpRM5zA4q4s6WEMGxB4yfaemCJVkjgf556A_Yg";
+    const SURVEY_ID = "writing_task_60";
+    const TOTAL_QUESTIONNAIRES = 1;
+
+    // 質問内容1の5問を使用する。「一般」は先頭、残りのカテゴリ順はランダム。
+    const QUESTION_VARIANTS = {
+      general: {
+        label: "一般",
+        questionNumber: 1,
+        prompts: [
+          "なぜ人の人生には映画が必要だと思いますか？",
+          "映画を見るという行為によって、あなたは何を失いますか？",
+          "「映像を観る」という体験は、あなたの世界をどのように拡張、あるいは制限すると思いますか？"
+        ]
+      },
+      content: {
+        label: "内容",
+        questionNumber: 2,
+        prompts: [
+          "先ほどの映像の中で、「何が正しい生き方なのか」についてあなたの考えを教えてください。",
+          "先ほどの映像は、人のどのような部分を映し出していると思いますか？",
+          "先ほどの映像では、登場人物のどのような選択や葛藤が描かれていたと思いますか？"
+        ]
+      },
+      inquiry: {
+        label: "問い",
+        questionNumber: 3,
+        prompts: [
+          "先ほどの映像の制作者があなたに残した「問い」は何だと思いますか？",
+          "先ほどの映像が描こうとしている最も根本的な問いは何だと思いますか？",
+          "先ほどの映像を通して、制作者はあなたにどのような「問い」を残しましたか？"
+        ]
+      },
+      emotion: {
+        label: "感情",
+        questionNumber: 4,
+        prompts: [
+          "先ほどの映像を観た後、あなたは最後にどのような感情が残りましたか？ 経緯を追って説明してください。",
+          "「心が動く」とは、それまでの自分の見方や感じ方が揺さぶられる現象とも言えます。そのような揺らぎは、あなたの内側でどのような変化として現れると思いますか？",
+          "先ほどの映像を観ている間に、あなたの気持ちはどのように変化しましたか？ 印象に残った場面とあわせて説明してください。"
+        ]
+      },
+      summary: {
+        label: "要約",
+        questionNumber: 5,
+        prompts: [
+          "先ほどの映像を一文で表すと、どのような物語になりますか？",
+          "先ほどの映像で起きたことを、映像を観ていない人にも伝わる一文で要約してください。",
+          "先ほどの映像の中心的な出来事や意味を、一文でまとめてください。"
+        ]
+      }
+    };
+
+    const CATEGORY_KEYS = Object.keys(QUESTION_VARIANTS);
+    const REST_CATEGORIES = CATEGORY_KEYS.filter(key => key !== "general");
+
+    const introScreen = document.getElementById("intro-screen");
+    const durationScreen = document.getElementById("duration-screen");
+    const questionScreen = document.getElementById("question-screen");
+    const finishScreen = document.getElementById("finish-screen");
+    const participantIdInput = document.getElementById("participant-id");
+    const viewingDurationInput = document.getElementById("viewing-duration");
+    const startButton = document.getElementById("start-button");
+    const durationStartButton = document.getElementById("duration-start-button");
+    const backButton = document.getElementById("back-button");
+    const nextButton = document.getElementById("next-button");
+    const submitButton = document.getElementById("submit-button");
+    const finishBackButton = document.getElementById("finish-back-button");
+    const progressLabel = document.getElementById("progress-label");
+    const categoryLabel = document.getElementById("category-label");
+    const questionText = document.getElementById("question-text");
+    const answerText = document.getElementById("answer-text");
+    const submitStatus = document.getElementById("submit-status");
+    const finishTitle = document.getElementById("finish-title");
+    const finishMessage = document.getElementById("finish-message");
+
+    let participantId = "";
+    let viewingDuration = "";
+    let questionnaireIndex = 0;
+    let questions = [];
+    let states = [];
+    let currentIndex = 0;
+    let questionVisitStartedMs = null;
+    let visitFirstInputRecorded = false;
+    let surveyStartedAt = null;
+    let surveyStartPerfMs = null;
+    let submitted = false;
+    let questionnaireHasStarted = false;
+
+    // ページを開くたびに新しくなる質問順のランダム化ID。
+    const browserCrypto = window.crypto;
+    const pageRandomizationId = browserCrypto && typeof browserCrypto.randomUUID === "function"
+      ? browserCrypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    const browserWarning = document.getElementById("browser-warning");
+    if (typeof fetch !== "function" || typeof Promise !== "function") {
+      browserWarning.textContent = "このブラウザは対応していません。最新版のChrome、Edge、Safariで開いてください。";
+      browserWarning.classList.remove("hidden");
+      startButton.disabled = true;
+    }
+
+    // 文字列から再現可能な32bitハッシュを作る。
+    function hashString(value) {
+      let hash = 2166136261;
+      for (let i = 0; i < value.length; i += 1) {
+        hash ^= value.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return hash >>> 0;
+    }
+
+    function mulberry32(seed) {
+      return function random() {
+        let t = seed += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function shuffled(values, seedText) {
+      const result = [...values];
+      const random = mulberry32(hashString(seedText));
+      for (let i = result.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(random() * (i + 1));
+        [result[i], result[j]] = [result[j], result[i]];
+      }
+      return result;
+    }
+
+    function buildQuestionnaires() {
+      const selectedQuestions = [];
+      for (const categoryKey of CATEGORY_KEYS) {
+        const category = QUESTION_VARIANTS[categoryKey];
+        const variantIndex = 0;
+        selectedQuestions.push({
+          id: `${categoryKey}_v1`,
+          categoryKey,
+          category: category.label,
+          variant: 1,
+          prompt: `Q${category.questionNumber}. ${category.prompts[variantIndex]}`
+        });
+      }
+      const selectedByCategory = Object.fromEntries(
+        selectedQuestions.map(question => [question.categoryKey, question])
+      );
+      const categoryOrder = [
+        "general",
+        ...shuffled(REST_CATEGORIES, `${pageRandomizationId}:order`)
+      ];
+      return [categoryOrder.map(key => selectedByCategory[key])];
+    }
+
+    const QUESTIONNAIRES = buildQuestionnaires();
+
+    function initialiseQuestionnaire() {
+      questions = QUESTIONNAIRES[questionnaireIndex];
+      viewingDuration = "";
+      viewingDurationInput.value = "";
+      states = questions.map(() => ({
+        answer: "",
+        firstShownMs: null,
+        cumulativeLatencyMs: 0,
+        cumulativeResponseDurationMs: 0,
+        visits: 0,
+        revisionCount: 0
+      }));
+      currentIndex = 0;
+      questionVisitStartedMs = null;
+      surveyStartedAt = null;
+      surveyStartPerfMs = null;
+      submitted = false;
+      questionnaireHasStarted = false;
+      submitStatus.textContent = "";
+      submitStatus.className = "small";
+      submitButton.disabled = false;
+      finishBackButton.disabled = false;
+    }
+
+    function showQuestion(index) {
+      const question = questions[index];
+      const state = states[index];
+      const now = performance.now();
+      progressLabel.textContent = `質問 ${index + 1} / ${questions.length}`;
+      categoryLabel.textContent = question.category;
+      questionText.textContent = question.prompt;
+      answerText.value = state.answer;
+      if (state.firstShownMs === null) state.firstShownMs = now - surveyStartPerfMs;
+      questionVisitStartedMs = now;
+      visitFirstInputRecorded = false;
+      updateNextButton();
+      answerText.focus();
+    }
+
+    function saveCurrentVisit() {
+      if (questionVisitStartedMs === null || !states[currentIndex]) return;
+      const state = states[currentIndex];
+      const answer = answerText.value.trim();
+      if (state.answer && state.answer !== answer) state.revisionCount += 1;
+      state.answer = answer;
+      // 質問を表示してから「次へ」または「戻る」を押すまでを回答時間とする。
+      // 再訪して修正した場合は、その訪問時間も合算する。
+      state.cumulativeResponseDurationMs += performance.now() - questionVisitStartedMs;
+      state.visits += 1;
+      questionVisitStartedMs = null;
+    }
+
+    function updateNextButton() {
+      nextButton.disabled = answerText.value.trim().length === 0;
+    }
+
+    function showOnly(screen) {
+      [introScreen, durationScreen, questionScreen, finishScreen].forEach(item => item.classList.add("hidden"));
+      screen.classList.remove("hidden");
+    }
+
+    function showDurationSelection() {
+      showOnly(durationScreen);
+      viewingDurationInput.focus();
+    }
+
+    function handleStart() {
+      const value = participantIdInput.value.trim();
+      if (!value) {
+        alert("実験参加者IDを入力してください。");
+        participantIdInput.focus();
+        return;
+      }
+      participantId = value;
+      questionnaireIndex = 0;
+      initialiseQuestionnaire();
+      showDurationSelection();
+    }
+
+    function handleDurationStart() {
+      const selectedDuration = viewingDurationInput.value;
+      if (!selectedDuration) {
+        alert("ショート動画の視聴時間を選択してください。");
+        viewingDurationInput.focus();
+        return;
+      }
+      viewingDuration = selectedDuration;
+      if (!questionnaireHasStarted) {
+        surveyStartedAt = new Date();
+        surveyStartPerfMs = performance.now();
+        questionnaireHasStarted = true;
+      }
+      showOnly(questionScreen);
+      showQuestion(0);
+    }
+
+    function handleNext() {
+      if (nextButton.disabled) return;
+      saveCurrentVisit();
+      if (currentIndex < questions.length - 1) {
+        currentIndex += 1;
+        showQuestion(currentIndex);
+      } else {
+        showOnly(finishScreen);
+      }
+    }
+
+    function handleBack() {
+      saveCurrentVisit();
+      if (currentIndex === 0) {
+        viewingDurationInput.value = viewingDuration;
+        showDurationSelection();
+        return;
+      }
+      currentIndex -= 1;
+      showQuestion(currentIndex);
+    }
+
+    function handleFinishBack() {
+      if (submitted) return;
+      currentIndex = questions.length - 1;
+      showOnly(questionScreen);
+      showQuestion(currentIndex);
+    }
+
+    function buildPayload() {
+      const responses = questions.map((question, index) => {
+        const state = states[index];
+        return {
+          question_id: question.id,
+          display_order: index + 1,
+          category_key: question.categoryKey,
+          category_label: question.category,
+          variant_number: question.variant,
+          question_text: question.prompt,
+          answer_text: state.answer,
+          answer_char_count: Array.from(state.answer).length,
+          first_shown_sec: Number((state.firstShownMs / 1000).toFixed(3)),
+          latency_to_first_input_sec: state.cumulativeLatencyMs === 0
+            ? null
+            : Number((state.cumulativeLatencyMs / 1000).toFixed(3)),
+          cumulative_duration_sec: Number((state.cumulativeResponseDurationMs / 1000).toFixed(3)),
+          visits: state.visits,
+          revision_count: state.revisionCount
+        };
+      });
+
+      return {
+        survey_id: SURVEY_ID,
+        participant_id: participantId,
+        viewing_duration: viewingDuration,
+        questionnaire_number: questionnaireIndex + 1,
+        total_questionnaires: TOTAL_QUESTIONNAIRES,
+        assignment_seed: pageRandomizationId,
+        page_randomization_id: pageRandomizationId,
+        started_at: surveyStartedAt.toISOString(),
+        completed_at: new Date().toISOString(),
+        total_duration_sec: Number(((performance.now() - surveyStartPerfMs) / 1000).toFixed(3)),
+        total_char_count: responses.reduce((sum, response) => sum + response.answer_char_count, 0),
+        user_agent: navigator.userAgent,
+        responses
+      };
+    }
+
+    async function sendToSupabase(payload) {
+      if (navigator.onLine === false) {
+        throw new Error("インターネットに接続されていません。接続後にもう一度送信してください。");
+      }
+      if (SUPABASE_URL.includes("YOUR_PROJECT") || SUPABASE_ANON_KEY.includes("YOUR_")) {
+        throw new Error("HTML内のSUPABASE_URLとSUPABASE_ANON_KEYを設定してください。");
+      }
+      const response = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/rpc/submit_writing_60_survey`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ payload })
+      });
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(`Supabaseへの保存に失敗しました (${response.status}): ${detail}`);
+      }
+      return response.json();
+    }
+
+    async function handleSubmit() {
+      if (submitted) return;
+      if (states.some(state => !state.answer)) {
+        alert("未回答の質問があります。");
+        return;
+      }
+      submitButton.disabled = true;
+      finishBackButton.disabled = true;
+      submitStatus.className = "small";
+      submitStatus.textContent = "送信中です。この画面を閉じずにお待ちください。";
+      try {
+        await sendToSupabase(buildPayload());
+        submitted = true;
+        submitStatus.className = "small success";
+        finishTitle.textContent = "アンケート完了";
+        finishMessage.textContent = "回答の送信が完了しました。";
+        submitStatus.textContent = "ご協力ありがとうございました。";
+      } catch (error) {
+        console.error(error);
+        submitStatus.className = "small error";
+        submitStatus.textContent = `送信できませんでした。実験者にお知らせください。${error.message}`;
+        submitButton.disabled = false;
+        finishBackButton.disabled = false;
+      }
+    }
+
+    answerText.addEventListener("input", () => {
+      const state = states[currentIndex];
+      // 初回回答時だけでなく、戻って修正した訪問でも、表示から最初の入力までを加算する。
+      if (state && !visitFirstInputRecorded && questionVisitStartedMs !== null) {
+        state.cumulativeLatencyMs += performance.now() - questionVisitStartedMs;
+        visitFirstInputRecorded = true;
+      }
+      updateNextButton();
+    });
+    participantIdInput.addEventListener("keydown", event => {
+      if (event.key === "Enter") handleStart();
+    });
+    startButton.addEventListener("click", handleStart);
+    durationStartButton.addEventListener("click", handleDurationStart);
+    nextButton.addEventListener("click", handleNext);
+    backButton.addEventListener("click", handleBack);
+    finishBackButton.addEventListener("click", handleFinishBack);
+    submitButton.addEventListener("click", handleSubmit);
+  </script>
+</body>
+</html>
