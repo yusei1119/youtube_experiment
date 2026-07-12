@@ -8,6 +8,9 @@ create table if not exists public.writing_submissions (
   id uuid primary key default gen_random_uuid(),
   survey_id text not null,
   participant_id text not null,
+  video_condition text not null check (
+    video_condition in ('short_video', 'meditation_video', 'daily_video')
+  ),
   questionnaire_number smallint not null check (questionnaire_number between 1 and 3),
   total_questionnaires smallint not null default 3 check (total_questionnaires = 3),
   condition_number smallint not null check (condition_number between 1 and 3),
@@ -24,6 +27,8 @@ create table if not exists public.writing_submissions (
 
 -- 旧版スキーマを実行済みの場合の移行処理。
 alter table public.writing_submissions
+  add column if not exists video_condition text;
+alter table public.writing_submissions
   add column if not exists questionnaire_number smallint;
 alter table public.writing_submissions
   add column if not exists total_questionnaires smallint default 3;
@@ -33,15 +38,18 @@ alter table public.writing_submissions
 update public.writing_submissions
 set questionnaire_number = coalesce(questionnaire_number, condition_number, 1),
     total_questionnaires = coalesce(total_questionnaires, 3),
-    page_randomization_id = coalesce(page_randomization_id, assignment_seed, 'legacy')
+    page_randomization_id = coalesce(page_randomization_id, assignment_seed, 'legacy'),
+    video_condition = coalesce(video_condition, 'short_video')
 where questionnaire_number is null
    or total_questionnaires is null
-   or page_randomization_id is null;
+   or page_randomization_id is null
+   or video_condition is null;
 
 alter table public.writing_submissions
   alter column questionnaire_number set not null,
   alter column total_questionnaires set not null,
-  alter column page_randomization_id set not null;
+  alter column page_randomization_id set not null,
+  alter column video_condition set not null;
 
 -- 旧版の「参加者につき1回」の制約を外し、3アンケートを別々に保存可能にする。
 alter table public.writing_submissions
@@ -57,6 +65,21 @@ begin
     alter table public.writing_submissions
       add constraint uq_writing_submission_round
       unique (survey_id, participant_id, questionnaire_number);
+  end if;
+end;
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'chk_writing_video_condition'
+      and conrelid = 'public.writing_submissions'::regclass
+  ) then
+    alter table public.writing_submissions
+      add constraint chk_writing_video_condition check (
+        video_condition in ('short_video', 'meditation_video', 'daily_video')
+      );
   end if;
 end;
 $$;
@@ -84,6 +107,8 @@ create index if not exists idx_writing_submissions_participant
   on public.writing_submissions (participant_id);
 create index if not exists idx_writing_submissions_questionnaire
   on public.writing_submissions (survey_id, questionnaire_number);
+create index if not exists idx_writing_submissions_video_condition
+  on public.writing_submissions (survey_id, video_condition);
 create index if not exists idx_writing_responses_submission
   on public.writing_responses (submission_id);
 
@@ -111,12 +136,13 @@ begin
   end if;
 
   insert into public.writing_submissions (
-    survey_id, participant_id, questionnaire_number, total_questionnaires,
+    survey_id, participant_id, video_condition, questionnaire_number, total_questionnaires,
     condition_number, assignment_seed, page_randomization_id,
     started_at, completed_at, total_duration_sec, user_agent
   ) values (
     nullif(btrim(payload->>'survey_id'), ''),
     nullif(btrim(payload->>'participant_id'), ''),
+    nullif(payload->>'video_condition', ''),
     (payload->>'questionnaire_number')::smallint,
     (payload->>'total_questionnaires')::smallint,
     (payload->>'condition_number')::smallint,

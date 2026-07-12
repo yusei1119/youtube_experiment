@@ -66,7 +66,7 @@ def fetch_all(url: str, headers: dict[str, str], params: dict[str, Any]) -> list
 def flatten_long(submissions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     submission_fields = [
-        "id", "survey_id", "participant_id", "questionnaire_number",
+        "id", "survey_id", "participant_id", "video_condition", "questionnaire_number",
         "total_questionnaires", "condition_number", "assignment_seed",
         "page_randomization_id", "started_at", "completed_at", "total_duration_sec",
         "created_at",
@@ -129,7 +129,7 @@ def main() -> None:
 
     params: dict[str, Any] = {
         "select": (
-            "id,survey_id,participant_id,questionnaire_number,total_questionnaires,"
+            "id,survey_id,participant_id,video_condition,questionnaire_number,total_questionnaires,"
             "condition_number,assignment_seed,page_randomization_id,started_at,"
             "completed_at,total_duration_sec,created_at,writing_responses(*)"
         ),
