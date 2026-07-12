@@ -38,42 +38,42 @@ COMPREHENSION_TEST_SELECTION = 1
 
 # 2分間の映画予告映像（8種類）
 TRAILER_URLS = {
-    1: "",
-    2: "",
-    3: "",
-    4: "",
-    5: "",
-    6: "",
-    7: "",
-    8: "",
+    1: "https://drive.google.com/file/d/1KPx7E5qjovn7aYjQ_2gMy0Aiiw5WEISY/view?usp=sharing",
+    2: "https://drive.google.com/file/d/1WWLCzHESQl3aLkDKoj314iw2jHFTO1Gu/view?usp=drive_link",
+    3: "https://drive.google.com/file/d/1EZPGKXA5mq9G08ksG4glzTxLZ82HRe--/view?usp=drive_link",
+    4: "https://drive.google.com/file/d/1WgwqKWkuqEcvw_aJNDeM7yg1lu40xL1X/view?usp=drive_link",
+    5: "https://drive.google.com/file/d/1SK7k7t4AkPKQV7BvCrkFDnNuQ1AR37Q4/view?usp=drive_link",
+    6: "https://drive.google.com/file/d/1Zfhg6Fw6m-sU1IIo1y0wwT1ujWKnPyXh/view?usp=drive_link",
+    7: "https://drive.google.com/file/d/1Lq13jk9W1M-eNCG4sAfiaNFbx-3s9eZj/view?usp=drive_link",
+    8: "https://drive.google.com/file/d/1rIKmh9cBn6cwmitlpM-kvZEUkKxe7Y7y/view?usp=drive_link",
 }
 
 # 日常動画（10種類）
 DAILY_VIDEO_URLS = {
-    1: "",
-    2: "",
-    3: "",
-    4: "",
-    5: "",
-    6: "",
-    7: "",
-    8: "",
-    9: "",
-    10: "",
+    1: "https://drive.google.com/file/d/1gfa9WprHTOXuAOP1SQv4G6E6iUqZu-_y/view?usp=sharing",
+    2: "https://drive.google.com/file/d/1X-BEmrZHQqC4Xvjfq8a_wyKZ0H8O9xLB/view?usp=drive_link",
+    3: "https://drive.google.com/file/d/15kq4fx2l-JvW01oKyKFpv3hJKWTzd-re/view?usp=sharing",
+    4: "https://drive.google.com/file/d/1Rko4-V7mHFPSj5C_IGP4mORsirn8KsBS/view?usp=drive_link",
+    5: "https://drive.google.com/file/d/1kELQxxy8aHRVvFFWakdpAn8Vb4XxRWqF/view?usp=drive_link",
+    6: "https://drive.google.com/file/d/1VraCSeLDd30d342HBZmOoSJYIqD4WQXP/view?usp=drive_link",
+    7: "https://drive.google.com/file/d/1_Zd_6qFn5efMpMVAy55C8wvXX6E5b8r4/view?usp=drive_link",
+    8: "https://drive.google.com/file/d/1ua8xcg1Bquj-z3cHl5Cb0KGb-pZ5OiYK/view?usp=sharing",
+    9: "https://drive.google.com/file/d/1WmmyvH3apEUGrpxAXhyZAUaS8RMviwTU/view?usp=drive_link",
+    10: "https://drive.google.com/file/d/106sMdCG48PKu7_3Se6wOinxBsSLQ8Pww/view?usp=drive_link",
 }
 
 # 理解度テスト（10種類）
 COMPREHENSION_TEST_URLS = {
-    1: "",
-    2: "",
-    3: "",
-    4: "",
-    5: "",
-    6: "",
-    7: "",
-    8: "",
-    9: "",
-    10: "",
+    1: "https://docs.google.com/forms/d/e/1FAIpQLScm74jQ2QxhQ8_tBzJDKOP6Po17RVnqR7KiZmXiTfceQWahPA/viewform?usp=sharing&ouid=107569946836489283456",
+    2: "https://forms.gle/M8KnLJZq7wJs2VbX7",
+    3: "https://forms.gle/cxVW8Qdbdx2tNWq17",
+    4: "https://forms.gle/qC7nuCLWAahTyVAW9",
+    5: "https://forms.gle/DGAaxRS3jghoiXVg6",
+    6: "https://forms.gle/Vi6rX1fFseJNbSjH9",
+    7: "https://forms.gle/8p5pNc8C9xrdny7C8",
+    8: "https://forms.gle/4F15493CQrRKtdJv9",
+    9: "https://forms.gle/YFPF5zV6bGnV13828",
+    10: "https://forms.gle/hxQoFDjyXf9LyUpP6",
 }
 
 # 毎回共通で使用するURL
