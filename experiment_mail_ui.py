@@ -68,17 +68,41 @@ class ExperimentMailUI:
             row=2, column=0, columnspan=3, sticky="w"
         )
         condition_names = list(DISPLAY_TO_KEY)
-        for index, variable in enumerate(self.order_vars, start=1):
-            ttk.Label(controls, text=f"実験{index}").grid(
-                row=2 + index, column=0, sticky="w", pady=4
+        for index, variable in enumerate(self.order_vars):
+            row = 3 + index
+            ttk.Label(controls, text=f"実験{index + 1}").grid(
+                row=row, column=0, sticky="w", pady=4
             )
-            ttk.Combobox(
+            order_box = ttk.Combobox(
                 controls,
                 textvariable=variable,
                 values=condition_names,
                 state="readonly",
-                width=18,
-            ).grid(row=2 + index, column=1, columnspan=2, sticky="ew", pady=4)
+                width=14,
+            )
+            order_box.grid(row=row, column=1, sticky="ew", pady=4)
+            order_box.bind("<<ComboboxSelected>>", lambda _event: self.generate())
+
+            buttons = ttk.Frame(controls)
+            buttons.grid(row=row, column=2, sticky="e", padx=(6, 0))
+            up_button = ttk.Button(
+                buttons,
+                text="↑",
+                width=3,
+                command=lambda position=index: self.move_order(position, -1),
+            )
+            up_button.pack(side="left", padx=1)
+            down_button = ttk.Button(
+                buttons,
+                text="↓",
+                width=3,
+                command=lambda position=index: self.move_order(position, 1),
+            )
+            down_button.pack(side="left", padx=1)
+            if index == 0:
+                up_button.state(["disabled"])
+            if index == len(self.order_vars) - 1:
+                down_button.state(["disabled"])
 
         next_row = 7
         ttk.Label(controls, text="映画予告映像番号", style="Section.TLabel").grid(
@@ -170,6 +194,18 @@ class ExperimentMailUI:
         }
         mail.DAILY_VIDEO_SELECTION = int(self.daily_video.get())
         mail.COMPREHENSION_TEST_SELECTION = int(self.comprehension_test.get())
+
+    def move_order(self, position: int, direction: int) -> None:
+        """条件を上下へ移動し、変更後の順序で本文を即時更新する。"""
+        destination = position + direction
+        if destination < 0 or destination >= len(self.order_vars):
+            return
+
+        current_value = self.order_vars[position].get()
+        destination_value = self.order_vars[destination].get()
+        self.order_vars[position].set(destination_value)
+        self.order_vars[destination].set(current_value)
+        self.generate()
 
     def generate(self) -> None:
         try:
