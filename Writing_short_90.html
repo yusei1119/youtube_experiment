@@ -168,6 +168,7 @@
     let states = [];
     let currentIndex = 0;
     let questionVisitStartedMs = null;
+    let visitFirstInputRecorded = false;
     let surveyStartedAt = null;
     let surveyStartPerfMs = null;
     let submitted = false;
@@ -246,8 +247,8 @@
       states = questions.map(() => ({
         answer: "",
         firstShownMs: null,
-        firstInputMs: null,
-        cumulativeDurationMs: 0,
+        cumulativeLatencyMs: 0,
+        cumulativeResponseDurationMs: 0,
         visits: 0,
         revisionCount: 0
       }));
@@ -274,6 +275,7 @@
       answerText.value = state.answer;
       if (state.firstShownMs === null) state.firstShownMs = now - surveyStartPerfMs;
       questionVisitStartedMs = now;
+      visitFirstInputRecorded = false;
       updateNextButton();
       answerText.focus();
     }
@@ -284,7 +286,9 @@
       const answer = answerText.value.trim();
       if (state.answer && state.answer !== answer) state.revisionCount += 1;
       state.answer = answer;
-      state.cumulativeDurationMs += performance.now() - questionVisitStartedMs;
+      // 質問を表示してから「次へ」または「戻る」を押すまでを回答時間とする。
+      // 再訪して修正した場合は、その訪問時間も合算する。
+      state.cumulativeResponseDurationMs += performance.now() - questionVisitStartedMs;
       state.visits += 1;
       questionVisitStartedMs = null;
     }
@@ -396,10 +400,10 @@
             question_text: question.prompt,
             answer_text: state.answer,
             first_shown_sec: Number((state.firstShownMs / 1000).toFixed(3)),
-            latency_to_first_input_sec: state.firstInputMs === null
+            latency_to_first_input_sec: state.cumulativeLatencyMs === 0
               ? null
-              : Number(((state.firstInputMs - state.firstShownMs) / 1000).toFixed(3)),
-            cumulative_duration_sec: Number((state.cumulativeDurationMs / 1000).toFixed(3)),
+              : Number((state.cumulativeLatencyMs / 1000).toFixed(3)),
+            cumulative_duration_sec: Number((state.cumulativeResponseDurationMs / 1000).toFixed(3)),
             visits: state.visits,
             revision_count: state.revisionCount
           };
@@ -468,8 +472,10 @@
 
     answerText.addEventListener("input", () => {
       const state = states[currentIndex];
-      if (state && state.firstInputMs === null) {
-        state.firstInputMs = performance.now() - surveyStartPerfMs;
+      // 初回回答時だけでなく、戻って修正した訪問でも、表示から最初の入力までを加算する。
+      if (state && !visitFirstInputRecorded && questionVisitStartedMs !== null) {
+        state.cumulativeLatencyMs += performance.now() - questionVisitStartedMs;
+        visitFirstInputRecorded = true;
       }
       updateNextButton();
     });

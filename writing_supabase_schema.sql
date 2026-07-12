@@ -117,6 +117,11 @@ create index if not exists idx_writing_submissions_video_condition
 create index if not exists idx_writing_responses_submission
   on public.writing_responses (submission_id);
 
+comment on column public.writing_responses.cumulative_duration_sec is
+  '質問画面の表示から次へ/戻るまでの時間を訪問ごとに合算した回答時間（修正時の再訪を含む）';
+comment on column public.writing_responses.latency_to_first_input_sec is
+  '各訪問で質問を表示してから最初に入力するまでの時間の合計（修正訪問を含む）';
+
 alter table public.writing_submissions enable row level security;
 alter table public.writing_responses enable row level security;
 
