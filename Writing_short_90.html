@@ -11,8 +11,8 @@
     h2 { margin: .2em 0 .7em; font-size: 1.15rem; }
     .card { border: 1px solid #d1d5db; border-radius: 10px; padding: 18px 20px; margin: 12px 0 20px; background: #fafafa; }
     label { font-weight: 650; display: block; margin-bottom: 5px; }
-    input[type="text"], textarea { width: 100%; box-sizing: border-box; padding: 10px; font: inherit; border: 1px solid #9ca3af; border-radius: 5px; background: white; }
-    input[type="text"] { margin-bottom: 12px; }
+    input[type="text"], select, textarea { width: 100%; box-sizing: border-box; padding: 10px; font: inherit; border: 1px solid #9ca3af; border-radius: 5px; background: white; }
+    input[type="text"], select { margin-bottom: 12px; }
     textarea { min-height: 220px; line-height: 1.65; resize: vertical; }
     button { padding: 9px 18px; font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid #6b7280; background: #f5f5f5; }
     button.primary { background: #2563eb; border-color: #2563eb; color: white; }
@@ -34,6 +34,13 @@
     <p class="small">この課題は能力を判定するものではありません。何かで調べたりせず、自分の言葉で回答してください。</p>
     <label for="participant-id">実験参加者ID</label>
     <input type="text" id="participant-id" autocomplete="off" placeholder="実験参加者IDを入力してください．例: A001">
+    <label for="video-condition">実験条件</label>
+    <select id="video-condition">
+      <option value="">選択してください</option>
+      <option value="short_video">ショート動画</option>
+      <option value="meditation_video">瞑想動画</option>
+      <option value="daily_video">日常動画</option>
+    </select>
     <div class="buttons"><button id="start-button" class="primary">開始</button></div>
   </div>
 
@@ -127,6 +134,7 @@
     const questionScreen = document.getElementById("question-screen");
     const finishScreen = document.getElementById("finish-screen");
     const participantIdInput = document.getElementById("participant-id");
+    const videoConditionInput = document.getElementById("video-condition");
     const startButton = document.getElementById("start-button");
     const backButton = document.getElementById("back-button");
     const nextButton = document.getElementById("next-button");
@@ -142,6 +150,7 @@
     const finishMessage = document.getElementById("finish-message");
 
     let participantId = "";
+    let videoCondition = "";
     let questionnaireIndex = 0;
     let questions = [];
     let states = [];
@@ -279,7 +288,14 @@
         participantIdInput.focus();
         return;
       }
+      const selectedCondition = videoConditionInput.value;
+      if (!selectedCondition) {
+        alert("実験条件を選択してください。");
+        videoConditionInput.focus();
+        return;
+      }
       participantId = value;
+      videoCondition = selectedCondition;
       questionnaireIndex = 0;
       initialiseQuestionnaire();
       showOnly(questionScreen);
@@ -328,6 +344,7 @@
       return {
         survey_id: SURVEY_ID,
         participant_id: participantId,
+        video_condition: videoCondition,
         questionnaire_number: questionnaireIndex + 1,
         total_questionnaires: TOTAL_QUESTIONNAIRES,
         condition_number: questionnaireIndex + 1,
