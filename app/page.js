@@ -57,7 +57,7 @@ export default function HomePage() {
         type="text"
         value={participantId}
         onChange={(e) => setParticipantId(e.target.value)}
-        placeholder="例: P001"
+        placeholder="例: A001"
         style={{
           width: "100%",
           padding: 12,
