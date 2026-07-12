@@ -1,0 +1,68 @@
+実験参加者ID:
+XX
+
+実験1（ショート動画条件）
+
+************************
+[1] ショート動画**(スマホ)**URL:
+https://youtube-experiment.vercel.app/
+↓
+
+[2] ショート動画後のアンケート:
+添付ファイル参照：NASA_task_90.html
+↓
+
+[3] 2分間の映画予告映像URL:
+https://drive.google.com/file/d/1KPx7E5qjovn7aYjQ_2gMy0Aiiw5WEISY/view?usp=sharing
+↓
+
+[4] ショート動画後の記述タスク:
+添付ファイル参照：Writing_task_90.html
+
+休憩（3分）
+
+実験2（瞑想動画条件）
+
+************************
+[1] 瞑想動画URL:
+https://drive.google.com/file/d/1JbmShwdUFkXOnLbwJp-MvXP0iJGA8z6O/view?usp=sharing
+↓
+
+[2] 瞑想動画後のアンケート:
+添付ファイル参照：NASA_task_90.html
+↓
+
+[3] 2分間の映画予告映像URL:
+https://drive.google.com/file/d/1WWLCzHESQl3aLkDKoj314iw2jHFTO1Gu/view?usp=drive_link
+↓
+
+[4] 瞑想動画後の記述タスク:
+添付ファイル参照：Writing_task_90.html
+
+休憩（3分）
+
+実験3（日常動画条件）
+
+************************
+[1] 日常動画URL:
+https://drive.google.com/file/d/1gfa9WprHTOXuAOP1SQv4G6E6iUqZu-_y/view?usp=sharing
+↓
+
+[2] 理解度テストURL:
+https://docs.google.com/forms/d/e/1FAIpQLScm74jQ2QxhQ8_tBzJDKOP6Po17RVnqR7KiZmXiTfceQWahPA/viewform?usp=sharing&ouid=107569946836489283456
+↓
+
+[3] 日常動画後のアンケート:
+添付ファイル参照：NASA_task_90.html
+↓
+
+[4] 2分間の映画予告映像URL:
+https://drive.google.com/file/d/1EZPGKXA5mq9G08ksG4glzTxLZ82HRe--/view?usp=drive_link
+↓
+
+[5] 日常動画後の記述タスク:
+添付ファイル参照：Writing_task_90.html
+
+************************
+[6] 実験後のアンケートURL:
+https://forms.gle/C21LeEya8L2UBUcA7

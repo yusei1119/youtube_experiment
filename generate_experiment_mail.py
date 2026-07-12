@@ -1,6 +1,10 @@
 """実験参加者に送るメール本文を生成するスクリプト。
 
-「ここから設定」内を書き換えてから、次のコマンドで実行してください。
+UIを使う場合は、次のコマンドで起動してください。
+
+    python3 experiment_mail_ui.py
+
+UIを使わず直接出力する場合は、「ここから設定」内を書き換えて実行します。
 
     python3 generate_experiment_mail.py
 
@@ -58,13 +62,13 @@ DAILY_VIDEO_URLS = {
     6: "https://drive.google.com/file/d/1VraCSeLDd30d342HBZmOoSJYIqD4WQXP/view?usp=drive_link",
     7: "https://drive.google.com/file/d/1_Zd_6qFn5efMpMVAy55C8wvXX6E5b8r4/view?usp=drive_link",
     8: "https://drive.google.com/file/d/1ua8xcg1Bquj-z3cHl5Cb0KGb-pZ5OiYK/view?usp=sharing",
-    9: "https://drive.google.com/file/d/1WmmyvH3apEUGrpxAXhyZAUaS8RMviwTU/view?usp=drive_link",
+    9: "https://drive.google.com/file/d/1WmmyvH3apEUGrpxAXhyZAUaS8RMviwTU/view?usp=sharing",
     10: "https://drive.google.com/file/d/106sMdCG48PKu7_3Se6wOinxBsSLQ8Pww/view?usp=drive_link",
 }
 
 # 理解度テスト（10種類）
 COMPREHENSION_TEST_URLS = {
-    1: "https://docs.google.com/forms/d/e/1FAIpQLScm74jQ2QxhQ8_tBzJDKOP6Po17RVnqR7KiZmXiTfceQWahPA/viewform?usp=sharing&ouid=107569946836489283456",
+    1: "https://forms.gle/m2XQcZVnZrobMXpR9",
     2: "https://forms.gle/M8KnLJZq7wJs2VbX7",
     3: "https://forms.gle/cxVW8Qdbdx2tNWq17",
     4: "https://forms.gle/qC7nuCLWAahTyVAW9",
