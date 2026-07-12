@@ -204,7 +204,7 @@ class ExperimentMailUI:
             for number, button in buttons.items():
                 is_selected = str(number) == selected
                 button.configure(
-                    background="#2563eb" if is_selected else "#f1f5f9",
+                    background="#1f4e79" if is_selected else "#f1f5f9",
                     foreground="#ffffff" if is_selected else "#172033",
                     relief="sunken" if is_selected else "flat",
                 )
