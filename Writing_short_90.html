@@ -32,6 +32,8 @@
   <div id="intro-screen" class="card">
     <h2>はじめに</h2>
     <p class="small">この課題は能力を判定するものではありません。何かで調べたりせず、自分の言葉で回答してください。</p>
+    <p class="small">このファイルはダウンロード後、Chrome・Edge・Safariなどのブラウザで開いてください。回答の送信にはインターネット接続が必要です。</p>
+    <div id="browser-warning" class="small error hidden"></div>
     <label for="participant-id">実験参加者ID</label>
     <input type="text" id="participant-id" autocomplete="off" placeholder="実験参加者IDを入力してください．例: A001">
     <div class="buttons"><button id="start-button" class="primary">次へ</button></div>
@@ -176,9 +178,17 @@
     const submittedConditions = new Set();
 
     // ページを開くたびに新しくなる値。3アンケート全体のランダム割当を識別する。
-    const pageRandomizationId = typeof crypto.randomUUID === "function"
-      ? crypto.randomUUID()
+    const browserCrypto = window.crypto;
+    const pageRandomizationId = browserCrypto && typeof browserCrypto.randomUUID === "function"
+      ? browserCrypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    const browserWarning = document.getElementById("browser-warning");
+    if (typeof fetch !== "function" || typeof Promise !== "function") {
+      browserWarning.textContent = "このブラウザは対応していません。最新版のChrome、Edge、Safariで開いてください。";
+      browserWarning.classList.remove("hidden");
+      startButton.disabled = true;
+    }
 
     // 文字列から再現可能な32bitハッシュを作る。
     function hashString(value) {
@@ -416,6 +426,9 @@
     }
 
     async function sendToSupabase(payload) {
+      if (navigator.onLine === false) {
+        throw new Error("インターネットに接続されていません。接続後にもう一度送信してください。");
+      }
       if (SUPABASE_URL.includes("YOUR_PROJECT") || SUPABASE_ANON_KEY.includes("YOUR_")) {
         throw new Error("HTML内のSUPABASE_URLとSUPABASE_ANON_KEYを設定してください。");
       }
