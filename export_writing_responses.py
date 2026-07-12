@@ -7,7 +7,7 @@
 使用例:
   python export_writing_responses.py
   python export_writing_responses.py --output writing_responses.csv
-  python export_writing_responses.py --format wide --survey-id writing_short_90
+  python export_writing_responses.py --format long --survey-id writing_short_90
 """
 
 from __future__ import annotations
@@ -83,17 +83,28 @@ def flatten_long(submissions: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def flatten_wide(submissions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """参加者×条件を1行とし、5カテゴリの回答を横方向へ展開する。"""
     rows: list[dict[str, Any]] = []
     for submission in submissions:
-        row = {key: value for key, value in submission.items() if key != "writing_responses"}
+        row = {
+            ("submission_id" if key == "id" else key): value
+            for key, value in submission.items()
+            if key != "writing_responses"
+        }
         for response in submission.get("writing_responses", []):
-            prefix = f"q{response['display_order']}"
-            for key in ("question_id", "category_key", "category_label", "variant_number",
+            prefix = response["category_key"]
+            for key in ("question_id", "display_order", "category_label", "variant_number",
                         "question_text", "answer_text", "first_shown_sec",
                         "latency_to_first_input_sec", "cumulative_duration_sec", "visits",
                         "revision_count"):
                 row[f"{prefix}_{key}"] = response.get(key)
         rows.append(row)
+    condition_order = {"short": 0, "med": 1, "control": 2}
+    rows.sort(key=lambda row: (
+        str(row.get("participant_id", "")),
+        condition_order.get(str(row.get("video_condition", "")), 99),
+        int(row.get("questionnaire_number") or 0),
+    ))
     return rows
 
 
@@ -112,7 +123,10 @@ def write_csv(rows: list[dict[str, Any]], output: Path) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Supabaseの記述課題回答をCSV出力")
     parser.add_argument("--output", "-o", default=DEFAULT_OUTPUT)
-    parser.add_argument("--format", choices=("long", "wide"), default="long")
+    parser.add_argument(
+        "--format", choices=("long", "wide"), default="wide",
+        help="wide: 参加者×条件で1行（既定）、long: 1回答で1行",
+    )
     parser.add_argument("--survey-id", default=None, help="指定したsurvey_idだけを出力")
     return parser.parse_args()
 

@@ -41,6 +41,7 @@
     <div id="condition-progress" class="small"></div>
     <h2>実験条件の選択</h2>
     <p class="small">このアンケートの直前に視聴した動画の条件を選択してください。</p>
+    <p id="condition-note" class="small"></p>
     <label for="video-condition">実験条件</label>
     <select id="video-condition">
       <option value="">選択してください</option>
@@ -144,6 +145,7 @@
     const participantIdInput = document.getElementById("participant-id");
     const videoConditionInput = document.getElementById("video-condition");
     const conditionProgress = document.getElementById("condition-progress");
+    const conditionNote = document.getElementById("condition-note");
     const startButton = document.getElementById("start-button");
     const conditionStartButton = document.getElementById("condition-start-button");
     const backButton = document.getElementById("back-button");
@@ -170,6 +172,7 @@
     let surveyStartPerfMs = null;
     let submitted = false;
     let questionnaireHasStarted = false;
+    const submittedConditions = new Set();
 
     // ページを開くたびに新しくなる値。3アンケート全体のランダム割当を識別する。
     const pageRandomizationId = typeof crypto.randomUUID === "function"
@@ -297,6 +300,13 @@
 
     function showConditionSelection() {
       conditionProgress.textContent = `アンケート ${questionnaireIndex + 1} / ${TOTAL_QUESTIONNAIRES}`;
+      for (const option of videoConditionInput.options) {
+        if (option.value) option.disabled = submittedConditions.has(option.value);
+      }
+      const remainingLabels = [...videoConditionInput.options]
+        .filter(option => option.value && !option.disabled)
+        .map(option => option.textContent);
+      conditionNote.textContent = `未回答の条件: ${remainingLabels.join("、")}`;
       showOnly(conditionScreen);
       videoConditionInput.focus();
     }
@@ -309,6 +319,7 @@
         return;
       }
       participantId = value;
+      submittedConditions.clear();
       questionnaireIndex = 0;
       initialiseQuestionnaire();
       showConditionSelection();
@@ -429,6 +440,7 @@
       try {
         await sendToSupabase(buildPayload());
         submitted = true;
+        submittedConditions.add(videoCondition);
         submitStatus.className = "small success";
         if (questionnaireIndex < TOTAL_QUESTIONNAIRES - 1) {
           submitStatus.textContent = `アンケート${questionnaireIndex + 1}を送信しました。「次のアンケートへ」を押してください。`;

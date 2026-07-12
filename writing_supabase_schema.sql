@@ -140,6 +140,16 @@ begin
     raise exception 'exactly 5 responses are required';
   end if;
 
+  if exists (
+    select 1
+    from public.writing_submissions
+    where survey_id = payload->>'survey_id'
+      and participant_id = payload->>'participant_id'
+      and video_condition = payload->>'video_condition'
+  ) then
+    raise exception 'this participant has already submitted the selected condition';
+  end if;
+
   insert into public.writing_submissions (
     survey_id, participant_id, video_condition, questionnaire_number, total_questionnaires,
     condition_number, assignment_seed, page_randomization_id,
