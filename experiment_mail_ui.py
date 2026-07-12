@@ -196,21 +196,42 @@ class ExperimentMailUI:
         numbers: list[int],
         columns: int,
     ) -> None:
-        """番号を一覧から直接選べるボタンとして配置する。"""
+        """ホバーと選択状態が分かる番号ボタンを配置する。"""
+        buttons: dict[int, tk.Button] = {}
+
+        def refresh_colors() -> None:
+            selected = variable.get()
+            for number, button in buttons.items():
+                is_selected = str(number) == selected
+                button.configure(
+                    background="#2563eb" if is_selected else "#f1f5f9",
+                    foreground="#ffffff" if is_selected else "#172033",
+                    relief="sunken" if is_selected else "flat",
+                )
+
+        def select(number: int) -> None:
+            variable.set(str(number))
+            refresh_colors()
+            self.generate()
+
+        def on_enter(number: int) -> None:
+            if variable.get() != str(number):
+                buttons[number].configure(background="#bfdbfe", foreground="#172033")
+
+        def on_leave(_number: int) -> None:
+            refresh_colors()
+
         for index, number in enumerate(numbers):
-            button = tk.Radiobutton(
+            button = tk.Button(
                 parent,
                 text=str(number),
-                variable=variable,
-                value=str(number),
-                indicatoron=False,
                 width=2,
                 padx=3,
                 pady=4,
                 relief="flat",
                 borderwidth=1,
-                selectcolor="#9dc7f5",
-                command=self.generate,
+                cursor="hand2",
+                command=lambda value=number: select(value),
             )
             button.grid(
                 row=index // columns,
@@ -218,6 +239,11 @@ class ExperimentMailUI:
                 padx=2,
                 pady=2,
             )
+            buttons[number] = button
+            button.bind("<Enter>", lambda _event, value=number: on_enter(value))
+            button.bind("<Leave>", lambda _event, value=number: on_leave(value))
+
+        refresh_colors()
 
     def _apply_settings(self) -> None:
         selected_names = [variable.get() for variable in self.order_vars]
