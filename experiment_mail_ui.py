@@ -14,8 +14,8 @@ class ExperimentMailUI:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         root.title("実験参加案内メール生成")
-        root.geometry("980x720")
-        root.minsize(820, 620)
+        root.geometry("1120x760")
+        root.minsize(940, 660)
 
         self.participant_id = tk.StringVar(value=mail.PARTICIPANT_ID)
         self.order_vars = [
@@ -105,34 +105,48 @@ class ExperimentMailUI:
         ttk.Label(controls, text="映画予告映像番号", style="Section.TLabel").grid(
             row=next_row, column=0, columnspan=3, sticky="w", pady=(18, 4)
         )
-        trailer_numbers = [str(number) for number in mail.TRAILER_URLS]
+        trailer_numbers = list(mail.TRAILER_URLS)
         for offset, key in enumerate(CONDITION_KEYS, start=1):
             ttk.Label(controls, text=mail.CONDITION_NAMES[key]).grid(
                 row=next_row + offset, column=0, sticky="w", pady=4
             )
-            ttk.Combobox(
-                controls,
-                textvariable=self.trailer_vars[key],
-                values=trailer_numbers,
-                state="readonly",
-                width=8,
-            ).grid(row=next_row + offset, column=1, sticky="w", pady=4)
+            number_frame = ttk.Frame(controls)
+            number_frame.grid(
+                row=next_row + offset,
+                column=1,
+                columnspan=2,
+                sticky="w",
+                pady=4,
+            )
+            self._add_number_buttons(
+                number_frame,
+                self.trailer_vars[key],
+                trailer_numbers,
+                columns=8,
+            )
 
         next_row += 5
         ttk.Label(controls, text="日常動画条件", style="Section.TLabel").grid(
             row=next_row, column=0, columnspan=3, sticky="w", pady=(18, 4)
         )
-        daily_numbers = [str(number) for number in mail.DAILY_VIDEO_URLS]
+        daily_numbers = list(mail.DAILY_VIDEO_URLS)
         ttk.Label(controls, text="動画・テスト番号").grid(
             row=next_row + 1, column=0, sticky="w"
         )
-        ttk.Combobox(
-            controls,
-            textvariable=self.daily_material,
-            values=daily_numbers,
-            state="readonly",
-            width=8,
-        ).grid(row=next_row + 1, column=1, sticky="w", pady=4)
+        daily_number_frame = ttk.Frame(controls)
+        daily_number_frame.grid(
+            row=next_row + 1,
+            column=1,
+            columnspan=2,
+            sticky="w",
+            pady=4,
+        )
+        self._add_number_buttons(
+            daily_number_frame,
+            self.daily_material,
+            daily_numbers,
+            columns=5,
+        )
         ttk.Label(
             controls,
             text="日常動画と理解度テストに同じ番号を使用",
@@ -174,6 +188,36 @@ class ExperimentMailUI:
         ttk.Label(outer, textvariable=self.status, style="Hint.TLabel").grid(
             row=2, column=0, columnspan=2, sticky="w", pady=(12, 0)
         )
+
+    def _add_number_buttons(
+        self,
+        parent: ttk.Frame,
+        variable: tk.StringVar,
+        numbers: list[int],
+        columns: int,
+    ) -> None:
+        """番号を一覧から直接選べるボタンとして配置する。"""
+        for index, number in enumerate(numbers):
+            button = tk.Radiobutton(
+                parent,
+                text=str(number),
+                variable=variable,
+                value=str(number),
+                indicatoron=False,
+                width=2,
+                padx=3,
+                pady=4,
+                relief="flat",
+                borderwidth=1,
+                selectcolor="#9dc7f5",
+                command=self.generate,
+            )
+            button.grid(
+                row=index // columns,
+                column=index % columns,
+                padx=2,
+                pady=2,
+            )
 
     def _apply_settings(self) -> None:
         selected_names = [variable.get() for variable in self.order_vars]
