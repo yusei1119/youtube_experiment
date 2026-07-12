@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "動画視聴実験",
-  description: "動画視聴実験と参加案内メール作成ツール",
+  description: "動画視聴実験",
 };
 
 export default function RootLayout({
