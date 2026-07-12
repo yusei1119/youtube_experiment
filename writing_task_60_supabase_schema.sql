@@ -30,7 +30,7 @@ create table if not exists public.writing_60_responses (
   display_order smallint not null check (display_order > 0),
   category_key text not null,
   category_label text not null,
-  variant_number smallint not null check (variant_number = 1),
+  variant_number smallint not null check (variant_number between 1 and 3),
   question_text text not null,
   answer_text text not null,
   answer_char_count integer not null check (answer_char_count >= 0),
@@ -42,6 +42,15 @@ create table if not exists public.writing_60_responses (
   unique (submission_id, question_id),
   unique (submission_id, display_order)
 );
+
+-- 旧版（variant_number = 1固定）を実行済みの場合も3種類を保存可能にする。
+alter table public.writing_60_responses
+  drop constraint if exists writing_60_responses_variant_number_check;
+alter table public.writing_60_responses
+  drop constraint if exists chk_writing_60_variant_number;
+alter table public.writing_60_responses
+  add constraint chk_writing_60_variant_number
+  check (variant_number between 1 and 3);
 
 create index if not exists idx_writing_60_participant
   on public.writing_60_submissions (participant_id);

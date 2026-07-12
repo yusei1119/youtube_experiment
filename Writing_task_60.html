@@ -87,7 +87,8 @@
     const SURVEY_ID = "writing_task_60";
     const TOTAL_QUESTIONNAIRES = 1;
 
-    // 質問内容1の5問を使用する。「一般」は先頭、残りのカテゴリ順はランダム。
+    // 各カテゴリの3候補から1問をランダム選択する。
+    // 「一般」は先頭、残りのカテゴリ順はランダム。
     const QUESTION_VARIANTS = {
       general: {
         label: "一般",
@@ -218,12 +219,13 @@
       const selectedQuestions = [];
       for (const categoryKey of CATEGORY_KEYS) {
         const category = QUESTION_VARIANTS[categoryKey];
-        const variantIndex = 0;
+        const random = mulberry32(hashString(`${pageRandomizationId}:variant:${categoryKey}`));
+        const variantIndex = Math.floor(random() * category.prompts.length);
         selectedQuestions.push({
-          id: `${categoryKey}_v1`,
+          id: `${categoryKey}_v${variantIndex + 1}`,
           categoryKey,
           category: category.label,
-          variant: 1,
+          variant: variantIndex + 1,
           prompt: `Q${category.questionNumber}. ${category.prompts[variantIndex]}`
         });
       }
