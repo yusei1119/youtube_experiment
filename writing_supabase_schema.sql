@@ -21,9 +21,7 @@ create table if not exists public.writing_submissions (
   total_duration_sec double precision not null check (total_duration_sec >= 0),
   total_char_count integer not null check (total_char_count >= 0),
   user_agent text,
-  created_at timestamptz not null default now(),
-  constraint uq_writing_submission_round
-    unique (survey_id, participant_id, questionnaire_number)
+  created_at timestamptz not null default now()
 );
 
 -- 旧版スキーマを実行済みの場合の移行処理。
@@ -69,17 +67,22 @@ alter table public.writing_submissions
 alter table public.writing_submissions
   drop constraint if exists writing_submissions_survey_id_participant_id_key;
 
+-- 同じ参加者IDによる複数回の回答を許可する。
+alter table public.writing_submissions
+  drop constraint if exists uq_writing_submission_round;
+alter table public.writing_submissions
+  drop constraint if exists writing_submissions_survey_id_participant_id_questionnaire_number_key;
 do $$
+declare constraint_row record;
 begin
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'uq_writing_submission_round'
+  for constraint_row in
+    select conname from pg_constraint
+    where contype = 'u'
       and conrelid = 'public.writing_submissions'::regclass
-  ) then
-    alter table public.writing_submissions
-      add constraint uq_writing_submission_round
-      unique (survey_id, participant_id, questionnaire_number);
-  end if;
+      and pg_get_constraintdef(oid) like '%participant_id%'
+  loop
+    execute format('alter table public.writing_submissions drop constraint %I', constraint_row.conname);
+  end loop;
 end;
 $$;
 
@@ -178,16 +181,6 @@ begin
   response_count := jsonb_array_length(coalesce(payload->'responses', '[]'::jsonb));
   if response_count <> 5 then
     raise exception 'exactly 5 responses are required';
-  end if;
-
-  if exists (
-    select 1
-    from public.writing_submissions
-    where survey_id = payload->>'survey_id'
-      and participant_id = payload->>'participant_id'
-      and video_condition = payload->>'video_condition'
-  ) then
-    raise exception 'this participant has already submitted the selected condition';
   end if;
 
   insert into public.writing_submissions (

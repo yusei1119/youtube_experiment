@@ -19,9 +19,25 @@ create table if not exists public.writing_60_submissions (
   total_duration_sec double precision not null check (total_duration_sec >= 0),
   total_char_count integer not null check (total_char_count >= 0),
   user_agent text,
-  created_at timestamptz not null default now(),
-  unique (survey_id, participant_id)
+  created_at timestamptz not null default now()
 );
+
+-- 同じ参加者IDによる複数回の回答を許可する。
+alter table public.writing_60_submissions
+  drop constraint if exists writing_60_submissions_survey_id_participant_id_key;
+do $$
+declare constraint_row record;
+begin
+  for constraint_row in
+    select conname from pg_constraint
+    where contype = 'u'
+      and conrelid = 'public.writing_60_submissions'::regclass
+      and pg_get_constraintdef(oid) like '%participant_id%'
+  loop
+    execute format('alter table public.writing_60_submissions drop constraint %I', constraint_row.conname);
+  end loop;
+end;
+$$;
 
 create table if not exists public.writing_60_responses (
   id bigint generated always as identity primary key,
@@ -88,14 +104,6 @@ begin
   response_count := jsonb_array_length(coalesce(payload->'responses', '[]'::jsonb));
   if response_count <> 5 then
     raise exception 'exactly 5 responses are required';
-  end if;
-
-  if exists (
-    select 1 from public.writing_60_submissions
-    where survey_id = payload->>'survey_id'
-      and participant_id = payload->>'participant_id'
-  ) then
-    raise exception 'this participant has already submitted';
   end if;
 
   insert into public.writing_60_submissions (

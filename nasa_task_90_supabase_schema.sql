@@ -18,10 +18,27 @@ create table if not exists public.nasa_90_submissions (
   raw_tlx_mean double precision not null check (raw_tlx_mean between 0 and 100),
   overall_workload integer not null check (overall_workload between 0 and 100),
   user_agent text,
-  created_at timestamptz not null default now(),
-  unique (survey_id, participant_id, condition_order),
-  unique (survey_id, participant_id, video_condition)
+  created_at timestamptz not null default now()
 );
+
+-- 同じ参加者ID・同じ条件による複数回の回答を許可する。
+alter table public.nasa_90_submissions
+  drop constraint if exists nasa_90_submissions_survey_id_participant_id_condition_order_key;
+alter table public.nasa_90_submissions
+  drop constraint if exists nasa_90_submissions_survey_id_participant_id_video_condition_key;
+do $$
+declare constraint_row record;
+begin
+  for constraint_row in
+    select conname from pg_constraint
+    where contype = 'u'
+      and conrelid = 'public.nasa_90_submissions'::regclass
+      and pg_get_constraintdef(oid) like '%participant_id%'
+  loop
+    execute format('alter table public.nasa_90_submissions drop constraint %I', constraint_row.conname);
+  end loop;
+end;
+$$;
 
 create table if not exists public.nasa_90_responses (
   id bigint generated always as identity primary key,

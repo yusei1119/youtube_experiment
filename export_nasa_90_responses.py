@@ -15,7 +15,6 @@ import argparse
 import csv
 import json
 import os
-import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -29,15 +28,6 @@ DIMENSION_ORDER = (
     "effort", "frustration", "overall",
 )
 CONDITION_ORDER = {"short": 0, "med": 1, "control": 2}
-
-
-def participant_version(participant_id: Any) -> tuple[str, int]:
-    """A001-v2を基礎ID A001・回答バージョン2に分解する。"""
-    value = str(participant_id or "")
-    match = re.fullmatch(r"(.+)-v([1-9][0-9]*)", value, flags=re.IGNORECASE)
-    if match:
-        return match.group(1), int(match.group(2))
-    return value, 1
 
 
 def load_env(path: str = ".env.local") -> None:
@@ -83,9 +73,6 @@ def flatten_long(submissions: list[dict[str, Any]]) -> list[dict[str, Any]]:
             for key, value in submission.items()
             if key != "nasa_90_responses"
         }
-        common["participant_base_id"], common["response_version"] = participant_version(
-            submission.get("participant_id")
-        )
         for response in submission.get("nasa_90_responses", []):
             response = {key: value for key, value in response.items() if key != "id"}
             rows.append({**common, **response})
@@ -101,9 +88,6 @@ def flatten_wide(submissions: list[dict[str, Any]]) -> list[dict[str, Any]]:
             for key, value in submission.items()
             if key != "nasa_90_responses"
         }
-        row["participant_base_id"], row["response_version"] = participant_version(
-            submission.get("participant_id")
-        )
         responses_by_key = {
             response["dimension_key"]: response
             for response in submission.get("nasa_90_responses", [])
