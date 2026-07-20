@@ -1,0 +1,625 @@
+﻿participant_id,condition,metric,value,condition_label,label_en
+A001,short,Mental,10.0,Short,Mental Demand
+A001,med,Mental,1.0,Meditation,Mental Demand
+A001,control,Mental,85.0,Control,Mental Demand
+A002,short,Mental,54.0,Short,Mental Demand
+A002,med,Mental,5.0,Meditation,Mental Demand
+A002,control,Mental,80.0,Control,Mental Demand
+A003,short,Mental,19.0,Short,Mental Demand
+A003,med,Mental,40.0,Meditation,Mental Demand
+A003,control,Mental,56.0,Control,Mental Demand
+A004,short,Mental,1.0,Short,Mental Demand
+A004,med,Mental,16.0,Meditation,Mental Demand
+A004,control,Mental,66.0,Control,Mental Demand
+A005,short,Mental,12.0,Short,Mental Demand
+A005,med,Mental,5.0,Meditation,Mental Demand
+A005,control,Mental,39.0,Control,Mental Demand
+A006,short,Mental,31.0,Short,Mental Demand
+A006,med,Mental,6.0,Meditation,Mental Demand
+A006,control,Mental,77.0,Control,Mental Demand
+A007,short,Mental,33.0,Short,Mental Demand
+A007,med,Mental,9.0,Meditation,Mental Demand
+A007,control,Mental,58.0,Control,Mental Demand
+A008,short,Mental,9.0,Short,Mental Demand
+A008,med,Mental,6.0,Meditation,Mental Demand
+A008,control,Mental,50.0,Control,Mental Demand
+A009,short,Mental,26.0,Short,Mental Demand
+A009,med,Mental,23.0,Meditation,Mental Demand
+A009,control,Mental,18.0,Control,Mental Demand
+A010,short,Mental,5.0,Short,Mental Demand
+A010,med,Mental,1.0,Meditation,Mental Demand
+A010,control,Mental,14.0,Control,Mental Demand
+A011,short,Mental,2.0,Short,Mental Demand
+A011,med,Mental,5.0,Meditation,Mental Demand
+A011,control,Mental,15.0,Control,Mental Demand
+A012,short,Mental,18.0,Short,Mental Demand
+A012,med,Mental,6.0,Meditation,Mental Demand
+A012,control,Mental,59.0,Control,Mental Demand
+A013,short,Mental,19.0,Short,Mental Demand
+A013,med,Mental,20.0,Meditation,Mental Demand
+A013,control,Mental,75.0,Control,Mental Demand
+A015,short,Mental,25.0,Short,Mental Demand
+A015,med,Mental,71.0,Meditation,Mental Demand
+A015,control,Mental,81.0,Control,Mental Demand
+A016,short,Mental,4.0,Short,Mental Demand
+A016,med,Mental,8.0,Meditation,Mental Demand
+A016,control,Mental,18.0,Control,Mental Demand
+A018,short,Mental,14.0,Short,Mental Demand
+A018,med,Mental,9.0,Meditation,Mental Demand
+A018,control,Mental,35.0,Control,Mental Demand
+A019,short,Mental,4.0,Short,Mental Demand
+A019,med,Mental,16.0,Meditation,Mental Demand
+A019,control,Mental,67.0,Control,Mental Demand
+A020,short,Mental,14.0,Short,Mental Demand
+A020,med,Mental,46.0,Meditation,Mental Demand
+A020,control,Mental,93.0,Control,Mental Demand
+A021,short,Mental,14.0,Short,Mental Demand
+A021,med,Mental,19.0,Meditation,Mental Demand
+A021,control,Mental,65.0,Control,Mental Demand
+A022,short,Mental,25.0,Short,Mental Demand
+A022,med,Mental,2.0,Meditation,Mental Demand
+A022,control,Mental,25.0,Control,Mental Demand
+A023,short,Mental,76.0,Short,Mental Demand
+A023,med,Mental,40.0,Meditation,Mental Demand
+A023,control,Mental,25.0,Control,Mental Demand
+A024,short,Mental,25.0,Short,Mental Demand
+A024,med,Mental,5.0,Meditation,Mental Demand
+A024,control,Mental,79.0,Control,Mental Demand
+A025,short,Mental,57.0,Short,Mental Demand
+A025,med,Mental,48.0,Meditation,Mental Demand
+A025,control,Mental,9.0,Control,Mental Demand
+A027,short,Mental,34.0,Short,Mental Demand
+A027,med,Mental,16.0,Meditation,Mental Demand
+A027,control,Mental,69.0,Control,Mental Demand
+A028,short,Mental,5.0,Short,Mental Demand
+A028,med,Mental,10.0,Meditation,Mental Demand
+A028,control,Mental,75.0,Control,Mental Demand
+A029,short,Mental,5.0,Short,Mental Demand
+A029,med,Mental,2.0,Meditation,Mental Demand
+A029,control,Mental,24.0,Control,Mental Demand
+A001,short,Physical,58.0,Short,Physical Demand
+A001,med,Physical,0.0,Meditation,Physical Demand
+A001,control,Physical,57.0,Control,Physical Demand
+A002,short,Physical,14.0,Short,Physical Demand
+A002,med,Physical,0.0,Meditation,Physical Demand
+A002,control,Physical,64.0,Control,Physical Demand
+A003,short,Physical,10.0,Short,Physical Demand
+A003,med,Physical,49.0,Meditation,Physical Demand
+A003,control,Physical,29.0,Control,Physical Demand
+A004,short,Physical,25.0,Short,Physical Demand
+A004,med,Physical,10.0,Meditation,Physical Demand
+A004,control,Physical,74.0,Control,Physical Demand
+A005,short,Physical,40.0,Short,Physical Demand
+A005,med,Physical,19.0,Meditation,Physical Demand
+A005,control,Physical,75.0,Control,Physical Demand
+A006,short,Physical,66.0,Short,Physical Demand
+A006,med,Physical,16.0,Meditation,Physical Demand
+A006,control,Physical,64.0,Control,Physical Demand
+A007,short,Physical,15.0,Short,Physical Demand
+A007,med,Physical,0.0,Meditation,Physical Demand
+A007,control,Physical,9.0,Control,Physical Demand
+A008,short,Physical,57.0,Short,Physical Demand
+A008,med,Physical,5.0,Meditation,Physical Demand
+A008,control,Physical,45.0,Control,Physical Demand
+A009,short,Physical,79.0,Short,Physical Demand
+A009,med,Physical,25.0,Meditation,Physical Demand
+A009,control,Physical,17.0,Control,Physical Demand
+A010,short,Physical,4.0,Short,Physical Demand
+A010,med,Physical,1.0,Meditation,Physical Demand
+A010,control,Physical,80.0,Control,Physical Demand
+A011,short,Physical,5.0,Short,Physical Demand
+A011,med,Physical,3.0,Meditation,Physical Demand
+A011,control,Physical,0.0,Control,Physical Demand
+A012,short,Physical,53.0,Short,Physical Demand
+A012,med,Physical,5.0,Meditation,Physical Demand
+A012,control,Physical,66.0,Control,Physical Demand
+A013,short,Physical,36.0,Short,Physical Demand
+A013,med,Physical,31.0,Meditation,Physical Demand
+A013,control,Physical,60.0,Control,Physical Demand
+A015,short,Physical,57.0,Short,Physical Demand
+A015,med,Physical,23.0,Meditation,Physical Demand
+A015,control,Physical,92.0,Control,Physical Demand
+A016,short,Physical,29.0,Short,Physical Demand
+A016,med,Physical,9.0,Meditation,Physical Demand
+A016,control,Physical,40.0,Control,Physical Demand
+A018,short,Physical,8.0,Short,Physical Demand
+A018,med,Physical,9.0,Meditation,Physical Demand
+A018,control,Physical,21.0,Control,Physical Demand
+A019,short,Physical,55.0,Short,Physical Demand
+A019,med,Physical,4.0,Meditation,Physical Demand
+A019,control,Physical,80.0,Control,Physical Demand
+A020,short,Physical,83.0,Short,Physical Demand
+A020,med,Physical,73.0,Meditation,Physical Demand
+A020,control,Physical,95.0,Control,Physical Demand
+A021,short,Physical,20.0,Short,Physical Demand
+A021,med,Physical,10.0,Meditation,Physical Demand
+A021,control,Physical,85.0,Control,Physical Demand
+A022,short,Physical,31.0,Short,Physical Demand
+A022,med,Physical,2.0,Meditation,Physical Demand
+A022,control,Physical,30.0,Control,Physical Demand
+A023,short,Physical,95.0,Short,Physical Demand
+A023,med,Physical,71.0,Meditation,Physical Demand
+A023,control,Physical,20.0,Control,Physical Demand
+A024,short,Physical,58.0,Short,Physical Demand
+A024,med,Physical,12.0,Meditation,Physical Demand
+A024,control,Physical,71.0,Control,Physical Demand
+A025,short,Physical,78.0,Short,Physical Demand
+A025,med,Physical,30.0,Meditation,Physical Demand
+A025,control,Physical,35.0,Control,Physical Demand
+A027,short,Physical,21.0,Short,Physical Demand
+A027,med,Physical,61.0,Meditation,Physical Demand
+A027,control,Physical,39.0,Control,Physical Demand
+A028,short,Physical,25.0,Short,Physical Demand
+A028,med,Physical,15.0,Meditation,Physical Demand
+A028,control,Physical,9.0,Control,Physical Demand
+A029,short,Physical,15.0,Short,Physical Demand
+A029,med,Physical,3.0,Meditation,Physical Demand
+A029,control,Physical,11.0,Control,Physical Demand
+A001,short,Temporal,3.0,Short,Temporal Demand
+A001,med,Temporal,0.0,Meditation,Temporal Demand
+A001,control,Temporal,62.0,Control,Temporal Demand
+A002,short,Temporal,4.0,Short,Temporal Demand
+A002,med,Temporal,1.0,Meditation,Temporal Demand
+A002,control,Temporal,16.0,Control,Temporal Demand
+A003,short,Temporal,4.0,Short,Temporal Demand
+A003,med,Temporal,10.0,Meditation,Temporal Demand
+A003,control,Temporal,29.0,Control,Temporal Demand
+A004,short,Temporal,1.0,Short,Temporal Demand
+A004,med,Temporal,3.0,Meditation,Temporal Demand
+A004,control,Temporal,16.0,Control,Temporal Demand
+A005,short,Temporal,4.0,Short,Temporal Demand
+A005,med,Temporal,9.0,Meditation,Temporal Demand
+A005,control,Temporal,9.0,Control,Temporal Demand
+A006,short,Temporal,15.0,Short,Temporal Demand
+A006,med,Temporal,7.0,Meditation,Temporal Demand
+A006,control,Temporal,26.0,Control,Temporal Demand
+A007,short,Temporal,0.0,Short,Temporal Demand
+A007,med,Temporal,5.0,Meditation,Temporal Demand
+A007,control,Temporal,4.0,Control,Temporal Demand
+A008,short,Temporal,13.0,Short,Temporal Demand
+A008,med,Temporal,5.0,Meditation,Temporal Demand
+A008,control,Temporal,62.0,Control,Temporal Demand
+A009,short,Temporal,16.0,Short,Temporal Demand
+A009,med,Temporal,27.0,Meditation,Temporal Demand
+A009,control,Temporal,21.0,Control,Temporal Demand
+A010,short,Temporal,1.0,Short,Temporal Demand
+A010,med,Temporal,1.0,Meditation,Temporal Demand
+A010,control,Temporal,5.0,Control,Temporal Demand
+A011,short,Temporal,0.0,Short,Temporal Demand
+A011,med,Temporal,0.0,Meditation,Temporal Demand
+A011,control,Temporal,0.0,Control,Temporal Demand
+A012,short,Temporal,54.0,Short,Temporal Demand
+A012,med,Temporal,9.0,Meditation,Temporal Demand
+A012,control,Temporal,35.0,Control,Temporal Demand
+A013,short,Temporal,18.0,Short,Temporal Demand
+A013,med,Temporal,15.0,Meditation,Temporal Demand
+A013,control,Temporal,53.0,Control,Temporal Demand
+A015,short,Temporal,61.0,Short,Temporal Demand
+A015,med,Temporal,61.0,Meditation,Temporal Demand
+A015,control,Temporal,96.0,Control,Temporal Demand
+A016,short,Temporal,19.0,Short,Temporal Demand
+A016,med,Temporal,9.0,Meditation,Temporal Demand
+A016,control,Temporal,60.0,Control,Temporal Demand
+A018,short,Temporal,46.0,Short,Temporal Demand
+A018,med,Temporal,9.0,Meditation,Temporal Demand
+A018,control,Temporal,37.0,Control,Temporal Demand
+A019,short,Temporal,13.0,Short,Temporal Demand
+A019,med,Temporal,5.0,Meditation,Temporal Demand
+A019,control,Temporal,90.0,Control,Temporal Demand
+A020,short,Temporal,26.0,Short,Temporal Demand
+A020,med,Temporal,50.0,Meditation,Temporal Demand
+A020,control,Temporal,92.0,Control,Temporal Demand
+A021,short,Temporal,86.0,Short,Temporal Demand
+A021,med,Temporal,0.0,Meditation,Temporal Demand
+A021,control,Temporal,71.0,Control,Temporal Demand
+A022,short,Temporal,55.0,Short,Temporal Demand
+A022,med,Temporal,1.0,Meditation,Temporal Demand
+A022,control,Temporal,10.0,Control,Temporal Demand
+A023,short,Temporal,4.0,Short,Temporal Demand
+A023,med,Temporal,10.0,Meditation,Temporal Demand
+A023,control,Temporal,1.0,Control,Temporal Demand
+A024,short,Temporal,38.0,Short,Temporal Demand
+A024,med,Temporal,27.0,Meditation,Temporal Demand
+A024,control,Temporal,66.0,Control,Temporal Demand
+A025,short,Temporal,93.0,Short,Temporal Demand
+A025,med,Temporal,50.0,Meditation,Temporal Demand
+A025,control,Temporal,78.0,Control,Temporal Demand
+A027,short,Temporal,34.0,Short,Temporal Demand
+A027,med,Temporal,11.0,Meditation,Temporal Demand
+A027,control,Temporal,35.0,Control,Temporal Demand
+A028,short,Temporal,35.0,Short,Temporal Demand
+A028,med,Temporal,10.0,Meditation,Temporal Demand
+A028,control,Temporal,10.0,Control,Temporal Demand
+A029,short,Temporal,28.0,Short,Temporal Demand
+A029,med,Temporal,7.0,Meditation,Temporal Demand
+A029,control,Temporal,5.0,Control,Temporal Demand
+A001,short,Performance_rev,4.0,Short,Performance (reversed)
+A001,med,Performance_rev,13.0,Meditation,Performance (reversed)
+A001,control,Performance_rev,10.0,Control,Performance (reversed)
+A002,short,Performance_rev,14.0,Short,Performance (reversed)
+A002,med,Performance_rev,16.0,Meditation,Performance (reversed)
+A002,control,Performance_rev,42.0,Control,Performance (reversed)
+A003,short,Performance_rev,50.0,Short,Performance (reversed)
+A003,med,Performance_rev,85.0,Meditation,Performance (reversed)
+A003,control,Performance_rev,64.0,Control,Performance (reversed)
+A004,short,Performance_rev,3.0,Short,Performance (reversed)
+A004,med,Performance_rev,8.0,Meditation,Performance (reversed)
+A004,control,Performance_rev,49.0,Control,Performance (reversed)
+A005,short,Performance_rev,50.0,Short,Performance (reversed)
+A005,med,Performance_rev,45.0,Meditation,Performance (reversed)
+A005,control,Performance_rev,65.0,Control,Performance (reversed)
+A006,short,Performance_rev,44.0,Short,Performance (reversed)
+A006,med,Performance_rev,8.0,Meditation,Performance (reversed)
+A006,control,Performance_rev,11.0,Control,Performance (reversed)
+A007,short,Performance_rev,81.0,Short,Performance (reversed)
+A007,med,Performance_rev,35.0,Meditation,Performance (reversed)
+A007,control,Performance_rev,54.0,Control,Performance (reversed)
+A008,short,Performance_rev,17.0,Short,Performance (reversed)
+A008,med,Performance_rev,4.0,Meditation,Performance (reversed)
+A008,control,Performance_rev,82.0,Control,Performance (reversed)
+A009,short,Performance_rev,82.0,Short,Performance (reversed)
+A009,med,Performance_rev,75.0,Meditation,Performance (reversed)
+A009,control,Performance_rev,79.0,Control,Performance (reversed)
+A010,short,Performance_rev,1.0,Short,Performance (reversed)
+A010,med,Performance_rev,1.0,Meditation,Performance (reversed)
+A010,control,Performance_rev,10.0,Control,Performance (reversed)
+A011,short,Performance_rev,45.0,Short,Performance (reversed)
+A011,med,Performance_rev,50.0,Meditation,Performance (reversed)
+A011,control,Performance_rev,20.0,Control,Performance (reversed)
+A012,short,Performance_rev,50.0,Short,Performance (reversed)
+A012,med,Performance_rev,39.0,Meditation,Performance (reversed)
+A012,control,Performance_rev,43.0,Control,Performance (reversed)
+A013,short,Performance_rev,52.0,Short,Performance (reversed)
+A013,med,Performance_rev,39.0,Meditation,Performance (reversed)
+A013,control,Performance_rev,68.0,Control,Performance (reversed)
+A015,short,Performance_rev,16.0,Short,Performance (reversed)
+A015,med,Performance_rev,61.0,Meditation,Performance (reversed)
+A015,control,Performance_rev,86.0,Control,Performance (reversed)
+A016,short,Performance_rev,17.0,Short,Performance (reversed)
+A016,med,Performance_rev,65.0,Meditation,Performance (reversed)
+A016,control,Performance_rev,11.0,Control,Performance (reversed)
+A018,short,Performance_rev,2.0,Short,Performance (reversed)
+A018,med,Performance_rev,5.0,Meditation,Performance (reversed)
+A018,control,Performance_rev,1.0,Control,Performance (reversed)
+A019,short,Performance_rev,16.0,Short,Performance (reversed)
+A019,med,Performance_rev,39.0,Meditation,Performance (reversed)
+A019,control,Performance_rev,34.0,Control,Performance (reversed)
+A020,short,Performance_rev,49.0,Short,Performance (reversed)
+A020,med,Performance_rev,33.0,Meditation,Performance (reversed)
+A020,control,Performance_rev,87.0,Control,Performance (reversed)
+A021,short,Performance_rev,50.0,Short,Performance (reversed)
+A021,med,Performance_rev,24.0,Meditation,Performance (reversed)
+A021,control,Performance_rev,39.0,Control,Performance (reversed)
+A022,short,Performance_rev,29.0,Short,Performance (reversed)
+A022,med,Performance_rev,37.0,Meditation,Performance (reversed)
+A022,control,Performance_rev,25.0,Control,Performance (reversed)
+A023,short,Performance_rev,10.0,Short,Performance (reversed)
+A023,med,Performance_rev,85.0,Meditation,Performance (reversed)
+A023,control,Performance_rev,50.0,Control,Performance (reversed)
+A024,short,Performance_rev,5.0,Short,Performance (reversed)
+A024,med,Performance_rev,8.0,Meditation,Performance (reversed)
+A024,control,Performance_rev,0.0,Control,Performance (reversed)
+A025,short,Performance_rev,38.0,Short,Performance (reversed)
+A025,med,Performance_rev,66.0,Meditation,Performance (reversed)
+A025,control,Performance_rev,36.0,Control,Performance (reversed)
+A027,short,Performance_rev,13.0,Short,Performance (reversed)
+A027,med,Performance_rev,39.0,Meditation,Performance (reversed)
+A027,control,Performance_rev,21.0,Control,Performance (reversed)
+A028,short,Performance_rev,5.0,Short,Performance (reversed)
+A028,med,Performance_rev,50.0,Meditation,Performance (reversed)
+A028,control,Performance_rev,95.0,Control,Performance (reversed)
+A029,short,Performance_rev,47.0,Short,Performance (reversed)
+A029,med,Performance_rev,42.0,Meditation,Performance (reversed)
+A029,control,Performance_rev,85.0,Control,Performance (reversed)
+A001,short,Effort,1.0,Short,Effort
+A001,med,Effort,69.0,Meditation,Effort
+A001,control,Effort,66.0,Control,Effort
+A002,short,Effort,6.0,Short,Effort
+A002,med,Effort,55.0,Meditation,Effort
+A002,control,Effort,54.0,Control,Effort
+A003,short,Effort,10.0,Short,Effort
+A003,med,Effort,50.0,Meditation,Effort
+A003,control,Effort,50.0,Control,Effort
+A004,short,Effort,1.0,Short,Effort
+A004,med,Effort,7.0,Meditation,Effort
+A004,control,Effort,67.0,Control,Effort
+A005,short,Effort,9.0,Short,Effort
+A005,med,Effort,15.0,Meditation,Effort
+A005,control,Effort,35.0,Control,Effort
+A006,short,Effort,9.0,Short,Effort
+A006,med,Effort,4.0,Meditation,Effort
+A006,control,Effort,61.0,Control,Effort
+A007,short,Effort,0.0,Short,Effort
+A007,med,Effort,7.0,Meditation,Effort
+A007,control,Effort,55.0,Control,Effort
+A008,short,Effort,12.0,Short,Effort
+A008,med,Effort,19.0,Meditation,Effort
+A008,control,Effort,61.0,Control,Effort
+A009,short,Effort,23.0,Short,Effort
+A009,med,Effort,76.0,Meditation,Effort
+A009,control,Effort,18.0,Control,Effort
+A010,short,Effort,1.0,Short,Effort
+A010,med,Effort,1.0,Meditation,Effort
+A010,control,Effort,46.0,Control,Effort
+A011,short,Effort,0.0,Short,Effort
+A011,med,Effort,35.0,Meditation,Effort
+A011,control,Effort,15.0,Control,Effort
+A012,short,Effort,25.0,Short,Effort
+A012,med,Effort,7.0,Meditation,Effort
+A012,control,Effort,61.0,Control,Effort
+A013,short,Effort,51.0,Short,Effort
+A013,med,Effort,50.0,Meditation,Effort
+A013,control,Effort,76.0,Control,Effort
+A015,short,Effort,21.0,Short,Effort
+A015,med,Effort,59.0,Meditation,Effort
+A015,control,Effort,82.0,Control,Effort
+A016,short,Effort,11.0,Short,Effort
+A016,med,Effort,9.0,Meditation,Effort
+A016,control,Effort,40.0,Control,Effort
+A018,short,Effort,60.0,Short,Effort
+A018,med,Effort,3.0,Meditation,Effort
+A018,control,Effort,41.0,Control,Effort
+A019,short,Effort,4.0,Short,Effort
+A019,med,Effort,40.0,Meditation,Effort
+A019,control,Effort,61.0,Control,Effort
+A020,short,Effort,75.0,Short,Effort
+A020,med,Effort,74.0,Meditation,Effort
+A020,control,Effort,83.0,Control,Effort
+A021,short,Effort,25.0,Short,Effort
+A021,med,Effort,0.0,Meditation,Effort
+A021,control,Effort,65.0,Control,Effort
+A022,short,Effort,6.0,Short,Effort
+A022,med,Effort,9.0,Meditation,Effort
+A022,control,Effort,29.0,Control,Effort
+A023,short,Effort,86.0,Short,Effort
+A023,med,Effort,29.0,Meditation,Effort
+A023,control,Effort,30.0,Control,Effort
+A024,short,Effort,16.0,Short,Effort
+A024,med,Effort,4.0,Meditation,Effort
+A024,control,Effort,60.0,Control,Effort
+A025,short,Effort,92.0,Short,Effort
+A025,med,Effort,41.0,Meditation,Effort
+A025,control,Effort,9.0,Control,Effort
+A027,short,Effort,12.0,Short,Effort
+A027,med,Effort,66.0,Meditation,Effort
+A027,control,Effort,45.0,Control,Effort
+A028,short,Effort,6.0,Short,Effort
+A028,med,Effort,5.0,Meditation,Effort
+A028,control,Effort,50.0,Control,Effort
+A029,short,Effort,10.0,Short,Effort
+A029,med,Effort,11.0,Meditation,Effort
+A029,control,Effort,12.0,Control,Effort
+A001,short,Frustration,79.0,Short,Frustration
+A001,med,Frustration,0.0,Meditation,Frustration
+A001,control,Frustration,59.0,Control,Frustration
+A002,short,Frustration,21.0,Short,Frustration
+A002,med,Frustration,1.0,Meditation,Frustration
+A002,control,Frustration,48.0,Control,Frustration
+A003,short,Frustration,19.0,Short,Frustration
+A003,med,Frustration,59.0,Meditation,Frustration
+A003,control,Frustration,55.0,Control,Frustration
+A004,short,Frustration,45.0,Short,Frustration
+A004,med,Frustration,2.0,Meditation,Frustration
+A004,control,Frustration,67.0,Control,Frustration
+A005,short,Frustration,65.0,Short,Frustration
+A005,med,Frustration,10.0,Meditation,Frustration
+A005,control,Frustration,70.0,Control,Frustration
+A006,short,Frustration,35.0,Short,Frustration
+A006,med,Frustration,3.0,Meditation,Frustration
+A006,control,Frustration,63.0,Control,Frustration
+A007,short,Frustration,0.0,Short,Frustration
+A007,med,Frustration,23.0,Meditation,Frustration
+A007,control,Frustration,7.0,Control,Frustration
+A008,short,Frustration,12.0,Short,Frustration
+A008,med,Frustration,5.0,Meditation,Frustration
+A008,control,Frustration,56.0,Control,Frustration
+A009,short,Frustration,84.0,Short,Frustration
+A009,med,Frustration,19.0,Meditation,Frustration
+A009,control,Frustration,85.0,Control,Frustration
+A010,short,Frustration,4.0,Short,Frustration
+A010,med,Frustration,1.0,Meditation,Frustration
+A010,control,Frustration,90.0,Control,Frustration
+A011,short,Frustration,55.0,Short,Frustration
+A011,med,Frustration,16.0,Meditation,Frustration
+A011,control,Frustration,80.0,Control,Frustration
+A012,short,Frustration,31.0,Short,Frustration
+A012,med,Frustration,22.0,Meditation,Frustration
+A012,control,Frustration,53.0,Control,Frustration
+A013,short,Frustration,53.0,Short,Frustration
+A013,med,Frustration,33.0,Meditation,Frustration
+A013,control,Frustration,74.0,Control,Frustration
+A015,short,Frustration,62.0,Short,Frustration
+A015,med,Frustration,68.0,Meditation,Frustration
+A015,control,Frustration,96.0,Control,Frustration
+A016,short,Frustration,59.0,Short,Frustration
+A016,med,Frustration,10.0,Meditation,Frustration
+A016,control,Frustration,85.0,Control,Frustration
+A018,short,Frustration,85.0,Short,Frustration
+A018,med,Frustration,35.0,Meditation,Frustration
+A018,control,Frustration,78.0,Control,Frustration
+A019,short,Frustration,83.0,Short,Frustration
+A019,med,Frustration,5.0,Meditation,Frustration
+A019,control,Frustration,60.0,Control,Frustration
+A020,short,Frustration,84.0,Short,Frustration
+A020,med,Frustration,67.0,Meditation,Frustration
+A020,control,Frustration,99.0,Control,Frustration
+A021,short,Frustration,39.0,Short,Frustration
+A021,med,Frustration,1.0,Meditation,Frustration
+A021,control,Frustration,60.0,Control,Frustration
+A022,short,Frustration,27.0,Short,Frustration
+A022,med,Frustration,1.0,Meditation,Frustration
+A022,control,Frustration,19.0,Control,Frustration
+A023,short,Frustration,100.0,Short,Frustration
+A023,med,Frustration,86.0,Meditation,Frustration
+A023,control,Frustration,5.0,Control,Frustration
+A024,short,Frustration,22.0,Short,Frustration
+A024,med,Frustration,4.0,Meditation,Frustration
+A024,control,Frustration,80.0,Control,Frustration
+A025,short,Frustration,85.0,Short,Frustration
+A025,med,Frustration,50.0,Meditation,Frustration
+A025,control,Frustration,48.0,Control,Frustration
+A027,short,Frustration,53.0,Short,Frustration
+A027,med,Frustration,25.0,Meditation,Frustration
+A027,control,Frustration,20.0,Control,Frustration
+A028,short,Frustration,91.0,Short,Frustration
+A028,med,Frustration,5.0,Meditation,Frustration
+A028,control,Frustration,50.0,Control,Frustration
+A029,short,Frustration,56.0,Short,Frustration
+A029,med,Frustration,4.0,Meditation,Frustration
+A029,control,Frustration,20.0,Control,Frustration
+A001,short,Overall,79.0,Short,Overall Workload
+A001,med,Overall,5.0,Meditation,Overall Workload
+A001,control,Overall,75.0,Control,Overall Workload
+A002,short,Overall,10.0,Short,Overall Workload
+A002,med,Overall,0.0,Meditation,Overall Workload
+A002,control,Overall,65.0,Control,Overall Workload
+A003,short,Overall,20.0,Short,Overall Workload
+A003,med,Overall,44.0,Meditation,Overall Workload
+A003,control,Overall,45.0,Control,Overall Workload
+A004,short,Overall,59.0,Short,Overall Workload
+A004,med,Overall,13.0,Meditation,Overall Workload
+A004,control,Overall,72.0,Control,Overall Workload
+A005,short,Overall,46.0,Short,Overall Workload
+A005,med,Overall,9.0,Meditation,Overall Workload
+A005,control,Overall,66.0,Control,Overall Workload
+A006,short,Overall,64.0,Short,Overall Workload
+A006,med,Overall,8.0,Meditation,Overall Workload
+A006,control,Overall,68.0,Control,Overall Workload
+A007,short,Overall,0.0,Short,Overall Workload
+A007,med,Overall,33.0,Meditation,Overall Workload
+A007,control,Overall,4.0,Control,Overall Workload
+A008,short,Overall,16.0,Short,Overall Workload
+A008,med,Overall,5.0,Meditation,Overall Workload
+A008,control,Overall,60.0,Control,Overall Workload
+A009,short,Overall,50.0,Short,Overall Workload
+A009,med,Overall,49.0,Meditation,Overall Workload
+A009,control,Overall,32.0,Control,Overall Workload
+A010,short,Overall,2.0,Short,Overall Workload
+A010,med,Overall,1.0,Meditation,Overall Workload
+A010,control,Overall,35.0,Control,Overall Workload
+A011,short,Overall,0.0,Short,Overall Workload
+A011,med,Overall,0.0,Meditation,Overall Workload
+A011,control,Overall,50.0,Control,Overall Workload
+A012,short,Overall,27.0,Short,Overall Workload
+A012,med,Overall,26.0,Meditation,Overall Workload
+A012,control,Overall,57.0,Control,Overall Workload
+A013,short,Overall,30.0,Short,Overall Workload
+A013,med,Overall,25.0,Meditation,Overall Workload
+A013,control,Overall,76.0,Control,Overall Workload
+A015,short,Overall,40.0,Short,Overall Workload
+A015,med,Overall,76.0,Meditation,Overall Workload
+A015,control,Overall,84.0,Control,Overall Workload
+A016,short,Overall,68.0,Short,Overall Workload
+A016,med,Overall,9.0,Meditation,Overall Workload
+A016,control,Overall,55.0,Control,Overall Workload
+A018,short,Overall,71.0,Short,Overall Workload
+A018,med,Overall,9.0,Meditation,Overall Workload
+A018,control,Overall,29.0,Control,Overall Workload
+A019,short,Overall,57.0,Short,Overall Workload
+A019,med,Overall,4.0,Meditation,Overall Workload
+A019,control,Overall,82.0,Control,Overall Workload
+A020,short,Overall,38.0,Short,Overall Workload
+A020,med,Overall,57.0,Meditation,Overall Workload
+A020,control,Overall,98.0,Control,Overall Workload
+A021,short,Overall,28.0,Short,Overall Workload
+A021,med,Overall,2.0,Meditation,Overall Workload
+A021,control,Overall,90.0,Control,Overall Workload
+A022,short,Overall,32.0,Short,Overall Workload
+A022,med,Overall,1.0,Meditation,Overall Workload
+A022,control,Overall,24.0,Control,Overall Workload
+A023,short,Overall,96.0,Short,Overall Workload
+A023,med,Overall,60.0,Meditation,Overall Workload
+A023,control,Overall,5.0,Control,Overall Workload
+A024,short,Overall,9.0,Short,Overall Workload
+A024,med,Overall,5.0,Meditation,Overall Workload
+A024,control,Overall,74.0,Control,Overall Workload
+A025,short,Overall,85.0,Short,Overall Workload
+A025,med,Overall,43.0,Meditation,Overall Workload
+A025,control,Overall,5.0,Control,Overall Workload
+A027,short,Overall,24.0,Short,Overall Workload
+A027,med,Overall,39.0,Meditation,Overall Workload
+A027,control,Overall,44.0,Control,Overall Workload
+A028,short,Overall,95.0,Short,Overall Workload
+A028,med,Overall,11.0,Meditation,Overall Workload
+A028,control,Overall,9.0,Control,Overall Workload
+A029,short,Overall,42.0,Short,Overall Workload
+A029,med,Overall,4.0,Meditation,Overall Workload
+A029,control,Overall,10.0,Control,Overall Workload
+A001,short,Raw_TLX,25.833333333333332,Short,Raw TLX (mean of 6)
+A001,med,Raw_TLX,13.833333333333334,Meditation,Raw TLX (mean of 6)
+A001,control,Raw_TLX,56.5,Control,Raw TLX (mean of 6)
+A002,short,Raw_TLX,18.833333333333332,Short,Raw TLX (mean of 6)
+A002,med,Raw_TLX,13.0,Meditation,Raw TLX (mean of 6)
+A002,control,Raw_TLX,50.666666666666664,Control,Raw TLX (mean of 6)
+A003,short,Raw_TLX,18.666666666666668,Short,Raw TLX (mean of 6)
+A003,med,Raw_TLX,48.833333333333336,Meditation,Raw TLX (mean of 6)
+A003,control,Raw_TLX,47.166666666666664,Control,Raw TLX (mean of 6)
+A004,short,Raw_TLX,12.666666666666666,Short,Raw TLX (mean of 6)
+A004,med,Raw_TLX,7.666666666666667,Meditation,Raw TLX (mean of 6)
+A004,control,Raw_TLX,56.5,Control,Raw TLX (mean of 6)
+A005,short,Raw_TLX,30.0,Short,Raw TLX (mean of 6)
+A005,med,Raw_TLX,17.166666666666668,Meditation,Raw TLX (mean of 6)
+A005,control,Raw_TLX,48.833333333333336,Control,Raw TLX (mean of 6)
+A006,short,Raw_TLX,33.333333333333336,Short,Raw TLX (mean of 6)
+A006,med,Raw_TLX,7.333333333333333,Meditation,Raw TLX (mean of 6)
+A006,control,Raw_TLX,50.333333333333336,Control,Raw TLX (mean of 6)
+A007,short,Raw_TLX,21.5,Short,Raw TLX (mean of 6)
+A007,med,Raw_TLX,13.166666666666666,Meditation,Raw TLX (mean of 6)
+A007,control,Raw_TLX,31.166666666666668,Control,Raw TLX (mean of 6)
+A008,short,Raw_TLX,20.0,Short,Raw TLX (mean of 6)
+A008,med,Raw_TLX,7.333333333333333,Meditation,Raw TLX (mean of 6)
+A008,control,Raw_TLX,59.333333333333336,Control,Raw TLX (mean of 6)
+A009,short,Raw_TLX,51.666666666666664,Short,Raw TLX (mean of 6)
+A009,med,Raw_TLX,40.833333333333336,Meditation,Raw TLX (mean of 6)
+A009,control,Raw_TLX,39.666666666666664,Control,Raw TLX (mean of 6)
+A010,short,Raw_TLX,2.6666666666666665,Short,Raw TLX (mean of 6)
+A010,med,Raw_TLX,1.0,Meditation,Raw TLX (mean of 6)
+A010,control,Raw_TLX,40.833333333333336,Control,Raw TLX (mean of 6)
+A011,short,Raw_TLX,17.833333333333332,Short,Raw TLX (mean of 6)
+A011,med,Raw_TLX,18.166666666666668,Meditation,Raw TLX (mean of 6)
+A011,control,Raw_TLX,21.666666666666668,Control,Raw TLX (mean of 6)
+A012,short,Raw_TLX,38.5,Short,Raw TLX (mean of 6)
+A012,med,Raw_TLX,14.666666666666666,Meditation,Raw TLX (mean of 6)
+A012,control,Raw_TLX,52.833333333333336,Control,Raw TLX (mean of 6)
+A013,short,Raw_TLX,38.166666666666664,Short,Raw TLX (mean of 6)
+A013,med,Raw_TLX,31.333333333333332,Meditation,Raw TLX (mean of 6)
+A013,control,Raw_TLX,67.66666666666667,Control,Raw TLX (mean of 6)
+A015,short,Raw_TLX,40.333333333333336,Short,Raw TLX (mean of 6)
+A015,med,Raw_TLX,57.166666666666664,Meditation,Raw TLX (mean of 6)
+A015,control,Raw_TLX,88.83333333333333,Control,Raw TLX (mean of 6)
+A016,short,Raw_TLX,23.166666666666668,Short,Raw TLX (mean of 6)
+A016,med,Raw_TLX,18.333333333333332,Meditation,Raw TLX (mean of 6)
+A016,control,Raw_TLX,42.333333333333336,Control,Raw TLX (mean of 6)
+A018,short,Raw_TLX,35.833333333333336,Short,Raw TLX (mean of 6)
+A018,med,Raw_TLX,11.666666666666666,Meditation,Raw TLX (mean of 6)
+A018,control,Raw_TLX,35.5,Control,Raw TLX (mean of 6)
+A019,short,Raw_TLX,29.166666666666668,Short,Raw TLX (mean of 6)
+A019,med,Raw_TLX,18.166666666666668,Meditation,Raw TLX (mean of 6)
+A019,control,Raw_TLX,65.33333333333333,Control,Raw TLX (mean of 6)
+A020,short,Raw_TLX,55.166666666666664,Short,Raw TLX (mean of 6)
+A020,med,Raw_TLX,57.166666666666664,Meditation,Raw TLX (mean of 6)
+A020,control,Raw_TLX,91.5,Control,Raw TLX (mean of 6)
+A021,short,Raw_TLX,39.0,Short,Raw TLX (mean of 6)
+A021,med,Raw_TLX,9.0,Meditation,Raw TLX (mean of 6)
+A021,control,Raw_TLX,64.16666666666667,Control,Raw TLX (mean of 6)
+A022,short,Raw_TLX,28.833333333333332,Short,Raw TLX (mean of 6)
+A022,med,Raw_TLX,8.666666666666666,Meditation,Raw TLX (mean of 6)
+A022,control,Raw_TLX,23.0,Control,Raw TLX (mean of 6)
+A023,short,Raw_TLX,61.833333333333336,Short,Raw TLX (mean of 6)
+A023,med,Raw_TLX,53.5,Meditation,Raw TLX (mean of 6)
+A023,control,Raw_TLX,21.833333333333332,Control,Raw TLX (mean of 6)
+A024,short,Raw_TLX,27.333333333333332,Short,Raw TLX (mean of 6)
+A024,med,Raw_TLX,10.0,Meditation,Raw TLX (mean of 6)
+A024,control,Raw_TLX,59.333333333333336,Control,Raw TLX (mean of 6)
+A025,short,Raw_TLX,73.83333333333333,Short,Raw TLX (mean of 6)
+A025,med,Raw_TLX,47.5,Meditation,Raw TLX (mean of 6)
+A025,control,Raw_TLX,35.833333333333336,Control,Raw TLX (mean of 6)
+A027,short,Raw_TLX,27.833333333333332,Short,Raw TLX (mean of 6)
+A027,med,Raw_TLX,36.333333333333336,Meditation,Raw TLX (mean of 6)
+A027,control,Raw_TLX,38.166666666666664,Control,Raw TLX (mean of 6)
+A028,short,Raw_TLX,27.833333333333332,Short,Raw TLX (mean of 6)
+A028,med,Raw_TLX,15.833333333333334,Meditation,Raw TLX (mean of 6)
+A028,control,Raw_TLX,48.166666666666664,Control,Raw TLX (mean of 6)
+A029,short,Raw_TLX,26.833333333333332,Short,Raw TLX (mean of 6)
+A029,med,Raw_TLX,11.5,Meditation,Raw TLX (mean of 6)
+A029,control,Raw_TLX,26.166666666666668,Control,Raw TLX (mean of 6)
