@@ -515,6 +515,44 @@ def save_csv(df: pd.DataFrame, path: Path) -> None:
     print(f"  saved: {path}")
 
 
+def make_pairwise_pvalue_table(pairwise: pd.DataFrame) -> pd.DataFrame:
+    """90版の3比較を、尺度ごとに横並びにした発表用p値表にする。"""
+    comparisons = (
+        ("short", "control"),
+        ("short", "med"),
+        ("control", "med"),
+    )
+    rows: list[dict[str, float | str]] = []
+    for metric in METRICS:
+        row: dict[str, float | str] = {
+            "metric": metric,
+            "label_en": LABELS[metric],
+        }
+        metric_rows = pairwise[pairwise["metric"] == metric]
+        for condition_1, condition_2 in comparisons:
+            match = metric_rows[
+                (metric_rows["condition_1"] == condition_1)
+                & (metric_rows["condition_2"] == condition_2)
+            ]
+            prefix = f"{condition_1}_vs_{condition_2}"
+            if match.empty:
+                p_raw = p_holm = np.nan
+                significance = ""
+            else:
+                result = match.iloc[0]
+                p_raw = float(result["p_raw"])
+                p_holm = float(result["p_holm_within_metric"])
+                significance = str(result["significance_holm"])
+            row[f"{prefix}_p_raw"] = p_raw
+            row[f"{prefix}_p_holm"] = p_holm
+            row[f"{prefix}_significance"] = significance
+            row[f"{prefix}_display"] = (
+                f"{p_holm:.4g} {significance}" if np.isfinite(p_holm) else ""
+            )
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
 def analyze_90(path: Path, root: Path, duplicate_policy: str, dpi: int, seed: int) -> None:
     output = root / "nasa_90"
     output.mkdir(parents=True, exist_ok=True)
@@ -550,6 +588,7 @@ def analyze_90(path: Path, root: Path, duplicate_policy: str, dpi: int, seed: in
     long_df["condition_label"] = long_df["condition"].map(CONDITION_LABELS_90)
     long_df["label_en"] = long_df["metric"].map(LABELS)
     omnibus, pairwise = analyze_paired(wide, CONDITION_ORDER_90)
+    pairwise_table = make_pairwise_pvalue_table(pairwise)
     description = descriptives(long_df, CONDITION_ORDER_90)
 
     wide_export = wide.copy()
@@ -560,10 +599,19 @@ def analyze_90(path: Path, root: Path, duplicate_policy: str, dpi: int, seed: in
     save_csv(description, output / "nasa_90_descriptive_stats.csv")
     save_csv(omnibus, output / "nasa_90_omnibus_results.csv")
     save_csv(pairwise, output / "nasa_90_pairwise_results.csv")
+    save_csv(pairwise_table, output / "nasa_90_pairwise_pvalue_table.csv")
     plot_pairlines(wide, CONDITION_ORDER_90, CONDITION_LABELS_90, output / "nasa_90_pairlines.png", dpi)
     plot_scatter_mean(long_df, CONDITION_ORDER_90, CONDITION_LABELS_90, omnibus, output / "nasa_90_scatter_mean_sem.png", dpi, seed)
     print(f"90版: A系完全ケース {len(wide)}名（入力 {len(report)}行）")
     print(omnibus[["metric", "test", "p_raw", "p_holm_across_metrics", "significance_holm"]].to_string(index=False))
+    display_columns = [
+        "label_en",
+        "short_vs_control_display",
+        "short_vs_med_display",
+        "control_vs_med_display",
+    ]
+    print("\n3条件の全ペア比較（各尺度内の3比較をHolm補正）")
+    print(pairwise_table[display_columns].to_string(index=False))
 
 
 def analyze_60(path: Path, root: Path, duplicate_policy: str, dpi: int, seed: int) -> None:
