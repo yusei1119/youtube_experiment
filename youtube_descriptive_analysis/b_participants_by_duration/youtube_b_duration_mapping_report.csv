@@ -1,0 +1,2 @@
+﻿source_row,participant_id,viewing_duration,valid_b_id,valid_duration,reason
+2,test001,5min,False,True,invalid_participant_id
