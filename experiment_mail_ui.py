@@ -8,6 +8,7 @@ import generate_experiment_mail as mail
 
 CONDITION_KEYS = list(mail.CONDITION_NAMES)
 DISPLAY_TO_KEY = {name: key for key, name in mail.CONDITION_NAMES.items()}
+STRETCH_BREAK_TEXT = "ストレッチ休憩（3分30秒）"
 
 
 class ExperimentMailUI:
@@ -273,6 +274,7 @@ class ExperimentMailUI:
         try:
             self._apply_settings()
             text = mail.generate_mail()
+            text = self._add_meditation_stretch_break(text)
         except (KeyError, ValueError) as error:
             messagebox.showerror("設定エラー", str(error))
             return
@@ -280,6 +282,14 @@ class ExperimentMailUI:
         self.preview.delete("1.0", "end")
         self.preview.insert("1.0", text)
         self.status.set("本文を生成しました。実験後アンケートは常に最後に配置されます。")
+
+    def _add_meditation_stretch_break(self, text: str) -> str:
+        """瞑想動画URLの直後に3分30秒のストレッチ休憩を追加する。"""
+        marker = f"[1] 瞑想動画URL:\n{mail.MEDITATION_VIDEO_URL}\n↓\n"
+        replacement = f"{marker}\n{STRETCH_BREAK_TEXT}\n↓\n"
+        if marker not in text:
+            raise ValueError("瞑想動画URLの挿入位置が見つかりません。")
+        return text.replace(marker, replacement, 1)
 
     def copy(self) -> None:
         text = self.preview.get("1.0", "end-1c")
