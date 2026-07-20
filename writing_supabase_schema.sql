@@ -19,6 +19,7 @@ create table if not exists public.writing_submissions (
   started_at timestamptz not null,
   completed_at timestamptz not null,
   total_duration_sec double precision not null check (total_duration_sec >= 0),
+  total_answer_duration_sec double precision not null check (total_answer_duration_sec >= 0),
   total_char_count integer not null check (total_char_count >= 0),
   user_agent text,
   created_at timestamptz not null default now()
@@ -35,6 +36,9 @@ alter table public.writing_submissions
   add column if not exists page_randomization_id text;
 alter table public.writing_submissions
   add column if not exists total_char_count integer;
+alter table public.writing_submissions
+  add column if not exists total_answer_duration_sec double precision
+  check (total_answer_duration_sec >= 0);
 
 -- 旧版の条件名を変換できるよう、旧チェック制約を先に外す。
 alter table public.writing_submissions
@@ -107,13 +111,56 @@ create table if not exists public.writing_responses (
   answer_text text not null,
   answer_char_count integer not null check (answer_char_count >= 0),
   first_shown_sec double precision not null check (first_shown_sec >= 0),
-  latency_to_first_input_sec double precision check (latency_to_first_input_sec >= 0),
-  cumulative_duration_sec double precision not null check (cumulative_duration_sec >= 0),
+  latency_sec double precision not null check (latency_sec >= 0),
+  writing_duration_sec double precision not null check (writing_duration_sec >= 0),
   visits integer not null check (visits > 0),
   revision_count integer not null check (revision_count >= 0),
   unique (submission_id, question_id),
   unique (submission_id, display_order)
 );
+
+-- 旧指標を新指標へ変換する。旧cumulativeはlatencyを含むため差し引く。
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'writing_responses'
+      and column_name = 'latency_to_first_input_sec'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'writing_responses'
+      and column_name = 'latency_sec'
+  ) then
+    alter table public.writing_responses
+      rename column latency_to_first_input_sec to latency_sec;
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'writing_responses'
+      and column_name = 'cumulative_duration_sec'
+  ) and not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'writing_responses'
+      and column_name = 'writing_duration_sec'
+  ) then
+    alter table public.writing_responses
+      rename column cumulative_duration_sec to writing_duration_sec;
+    update public.writing_responses
+    set writing_duration_sec = greatest(
+      writing_duration_sec - coalesce(latency_sec, 0),
+      0
+    );
+  end if;
+end;
+$$;
+
+update public.writing_responses
+set latency_sec = 0
+where latency_sec is null;
+
+alter table public.writing_responses
+  alter column latency_sec set not null;
 
 alter table public.writing_responses
   add column if not exists answer_char_count integer;
@@ -142,6 +189,24 @@ where total_char_count is null;
 alter table public.writing_submissions
   alter column total_char_count set not null;
 
+update public.writing_submissions submission
+set total_answer_duration_sec = totals.total_answer_duration_sec
+from (
+  select submission_id,
+         sum(latency_sec + writing_duration_sec) as total_answer_duration_sec
+  from public.writing_responses
+  group by submission_id
+) totals
+where submission.id = totals.submission_id
+  and submission.total_answer_duration_sec is null;
+
+update public.writing_submissions
+set total_answer_duration_sec = 0
+where total_answer_duration_sec is null;
+
+alter table public.writing_submissions
+  alter column total_answer_duration_sec set not null;
+
 create index if not exists idx_writing_submissions_participant
   on public.writing_submissions (participant_id);
 create index if not exists idx_writing_submissions_questionnaire
@@ -151,10 +216,12 @@ create index if not exists idx_writing_submissions_video_condition
 create index if not exists idx_writing_responses_submission
   on public.writing_responses (submission_id);
 
-comment on column public.writing_responses.cumulative_duration_sec is
-  '質問画面の表示から次へ/戻るまでの時間を訪問ごとに合算した回答時間（修正時の再訪を含む）';
-comment on column public.writing_responses.latency_to_first_input_sec is
-  '各訪問で質問を表示してから最初に入力するまでの時間の合計（修正訪問を含む）';
+comment on column public.writing_responses.writing_duration_sec is
+  '各訪問の初回入力後から次へ/戻るまでの記述時間の合計（修正訪問を含む）';
+comment on column public.writing_responses.latency_sec is
+  '各訪問で質問を表示してから最初に入力するまでの時間の合計（入力なしの再訪は訪問全体）';
+comment on column public.writing_submissions.total_answer_duration_sec is
+  '5問分のlatency_secとwriting_duration_secの合計。確認画面・送信時間は含まない';
 comment on column public.writing_responses.answer_char_count is
   '回答のUnicode文字数（先頭末尾の空白を除き、回答内の空白・改行・句読点を含む）';
 comment on column public.writing_submissions.total_char_count is
@@ -186,7 +253,8 @@ begin
   insert into public.writing_submissions (
     survey_id, participant_id, video_condition, questionnaire_number, total_questionnaires,
     condition_number, assignment_seed, page_randomization_id,
-    started_at, completed_at, total_duration_sec, total_char_count, user_agent
+    started_at, completed_at, total_duration_sec, total_answer_duration_sec,
+    total_char_count, user_agent
   ) values (
     nullif(btrim(payload->>'survey_id'), ''),
     nullif(btrim(payload->>'participant_id'), ''),
@@ -200,6 +268,13 @@ begin
     (payload->>'completed_at')::timestamptz,
     (payload->>'total_duration_sec')::double precision,
     (
+      select sum(
+        coalesce((item->>'latency_sec')::double precision, 0)
+        + (item->>'writing_duration_sec')::double precision
+      )
+      from jsonb_array_elements(payload->'responses') as item
+    ),
+    (
       select sum(char_length(btrim(item->>'answer_text')))::integer
       from jsonb_array_elements(payload->'responses') as item
     ),
@@ -210,7 +285,7 @@ begin
   insert into public.writing_responses (
     submission_id, question_id, display_order, category_key, category_label,
     variant_number, question_text, answer_text, answer_char_count, first_shown_sec,
-    latency_to_first_input_sec, cumulative_duration_sec, visits, revision_count
+    latency_sec, writing_duration_sec, visits, revision_count
   )
   select
     new_submission_id,
@@ -223,8 +298,8 @@ begin
     nullif(btrim(item->>'answer_text'), ''),
     char_length(nullif(btrim(item->>'answer_text'), '')),
     (item->>'first_shown_sec')::double precision,
-    nullif(item->>'latency_to_first_input_sec', '')::double precision,
-    (item->>'cumulative_duration_sec')::double precision,
+    coalesce(nullif(item->>'latency_sec', '')::double precision, 0),
+    (item->>'writing_duration_sec')::double precision,
     (item->>'visits')::integer,
     (item->>'revision_count')::integer
   from jsonb_array_elements(payload->'responses') as item;

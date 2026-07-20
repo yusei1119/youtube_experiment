@@ -173,6 +173,7 @@
     let states = [];
     let currentIndex = 0;
     let questionVisitStartedMs = null;
+    let visitWritingStartedMs = null;
     let visitFirstInputRecorded = false;
     let surveyStartedAt = null;
     let surveyStartPerfMs = null;
@@ -261,12 +262,13 @@
         answer: "",
         firstShownMs: null,
         cumulativeLatencyMs: 0,
-        cumulativeResponseDurationMs: 0,
+        cumulativeWritingDurationMs: 0,
         visits: 0,
         revisionCount: 0
       }));
       currentIndex = 0;
       questionVisitStartedMs = null;
+      visitWritingStartedMs = null;
       surveyStartedAt = null;
       surveyStartPerfMs = null;
       submitted = false;
@@ -290,6 +292,7 @@
       answerText.value = state.answer;
       if (state.firstShownMs === null) state.firstShownMs = now - surveyStartPerfMs;
       questionVisitStartedMs = now;
+      visitWritingStartedMs = null;
       visitFirstInputRecorded = false;
       updateNextButton();
       answerText.focus();
@@ -299,13 +302,19 @@
       if (questionVisitStartedMs === null || !states[currentIndex]) return;
       const state = states[currentIndex];
       const answer = answerText.value.trim();
+      const now = performance.now();
       if (state.answer && state.answer !== answer) state.revisionCount += 1;
       state.answer = answer;
-      // 質問を表示してから「次へ」または「戻る」を押すまでを回答時間とする。
-      // 再訪して修正した場合は、その訪問時間も合算する。
-      state.cumulativeResponseDurationMs += performance.now() - questionVisitStartedMs;
+      if (visitFirstInputRecorded && visitWritingStartedMs !== null) {
+        // 初回入力後から「次へ」/「戻る」までだけを記述時間とする。
+        state.cumulativeWritingDurationMs += now - visitWritingStartedMs;
+      } else {
+        // 修正せずに離れた再訪は、訪問全体を入力前時間に分類する。
+        state.cumulativeLatencyMs += now - questionVisitStartedMs;
+      }
       state.visits += 1;
       questionVisitStartedMs = null;
+      visitWritingStartedMs = null;
     }
 
     function updateNextButton() {
@@ -411,14 +420,17 @@
           answer_text: state.answer,
           answer_char_count: Array.from(state.answer).length,
           first_shown_sec: Number((state.firstShownMs / 1000).toFixed(3)),
-          latency_to_first_input_sec: state.cumulativeLatencyMs === 0
-            ? null
-            : Number((state.cumulativeLatencyMs / 1000).toFixed(3)),
-          cumulative_duration_sec: Number((state.cumulativeResponseDurationMs / 1000).toFixed(3)),
+          latency_sec: Number((state.cumulativeLatencyMs / 1000).toFixed(3)),
+          writing_duration_sec: Number((state.cumulativeWritingDurationMs / 1000).toFixed(3)),
           visits: state.visits,
           revision_count: state.revisionCount
         };
       });
+
+      const totalAnswerDurationSec = responses.reduce(
+        (sum, response) => sum + response.latency_sec + response.writing_duration_sec,
+        0
+      );
 
       return {
         survey_id: SURVEY_ID,
@@ -432,6 +444,7 @@
         started_at: surveyStartedAt.toISOString(),
         completed_at: new Date().toISOString(),
         total_duration_sec: Number(((performance.now() - surveyStartPerfMs) / 1000).toFixed(3)),
+        total_answer_duration_sec: Number(totalAnswerDurationSec.toFixed(3)),
         total_char_count: responses.reduce((sum, response) => sum + response.answer_char_count, 0),
         user_agent: navigator.userAgent,
         responses
@@ -507,7 +520,9 @@
       const state = states[currentIndex];
       // 初回回答時だけでなく、戻って修正した訪問でも、表示から最初の入力までを加算する。
       if (state && !visitFirstInputRecorded && questionVisitStartedMs !== null) {
-        state.cumulativeLatencyMs += performance.now() - questionVisitStartedMs;
+        const now = performance.now();
+        state.cumulativeLatencyMs += now - questionVisitStartedMs;
+        visitWritingStartedMs = now;
         visitFirstInputRecorded = true;
       }
       updateNextButton();

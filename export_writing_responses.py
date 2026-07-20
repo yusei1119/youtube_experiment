@@ -69,7 +69,7 @@ def flatten_long(submissions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "id", "survey_id", "participant_id", "video_condition", "questionnaire_number",
         "total_questionnaires", "condition_number", "assignment_seed",
         "page_randomization_id", "started_at", "completed_at", "total_duration_sec",
-        "total_char_count", "created_at",
+        "total_answer_duration_sec", "total_char_count", "created_at",
     ]
     for submission in submissions:
         common = {
@@ -95,7 +95,7 @@ def flatten_wide(submissions: list[dict[str, Any]]) -> list[dict[str, Any]]:
             prefix = response["category_key"]
             for key in ("question_id", "display_order", "category_label", "variant_number",
                         "question_text", "answer_text", "answer_char_count", "first_shown_sec",
-                        "latency_to_first_input_sec", "cumulative_duration_sec", "visits",
+                        "latency_sec", "writing_duration_sec", "visits",
                         "revision_count"):
                 row[f"{prefix}_{key}"] = response.get(key)
         rows.append(row)
@@ -145,7 +145,8 @@ def main() -> None:
         "select": (
             "id,survey_id,participant_id,video_condition,questionnaire_number,total_questionnaires,"
             "condition_number,assignment_seed,page_randomization_id,started_at,"
-            "completed_at,total_duration_sec,total_char_count,created_at,writing_responses(*)"
+            "completed_at,total_duration_sec,total_answer_duration_sec,total_char_count,"
+            "created_at,writing_responses(*)"
         ),
         "order": "created_at.asc",
         "writing_responses.order": "display_order.asc",
