@@ -22,6 +22,7 @@
     .hidden { display: none; }
     .error { color: #b91c1c; }
     .success { color: #166534; }
+    .selection-warning { margin: 10px 0 14px; padding: 10px 12px; border: 2px solid #d97706; border-radius: 6px; background: #fffbeb; color: #92400e; font-weight: 700; }
     .section-title { font-size: 1.35rem; font-weight: 700; margin: 8px 0; }
     .question-text { margin-bottom: 34px; }
     .slider-wrapper { position: relative; padding: 12px 4px 0; }
@@ -45,7 +46,7 @@
 
   <div id="duration-screen" class="card hidden">
     <h2>ショート動画の視聴時間</h2>
-    <p class="small">前の手順で視聴したショート動画の視聴時間を選択してください。</p>
+    <p class="small selection-warning">重要：実験案内メールの「動画視聴時間」を確認し，メールに記載された時間と同じ時間を選択してください．</p>
     <label for="viewing-duration">前の手順で視聴したショート動画の視聴時間</label>
     <select id="viewing-duration">
       <option value="">選択してください</option>
@@ -231,6 +232,14 @@
     function handleDurationStart() {
       if (!viewingDurationInput.value) {
         alert("ショート動画の視聴時間を選択してください。");
+        viewingDurationInput.focus();
+        return;
+      }
+      const selectedLabel = viewingDurationInput.options[viewingDurationInput.selectedIndex].textContent;
+      const confirmed = window.confirm(
+        `選択した動画視聴時間は「${selectedLabel}」です。\n実験案内メールに記載された時間と一致していますか？`
+      );
+      if (!confirmed) {
         viewingDurationInput.focus();
         return;
       }
