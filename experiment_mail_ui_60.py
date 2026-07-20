@@ -202,7 +202,9 @@ class ExperimentMail60UI:
 
         self.preview.delete("1.0", "end")
         self.preview.insert("1.0", text)
-        self.status.set("選択内容を反映して本文を生成しました。")
+        self.status.set(
+            "本文を生成しました。NASA課題・記述タスクはURLで案内されます。"
+        )
 
     def copy(self) -> None:
         text = self.preview.get("1.0", "end-1c")

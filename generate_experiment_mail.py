@@ -98,7 +98,7 @@ CONDITION_NAMES = {
     "daily": "日常動画",
 }
 
-NASA_TASK_FILE = "NASA_task_90.html"
+NASA_TASK_URL = "https://youtube-experiment.vercel.app/nasa-task-90.html"
 WRITING_TASK_URL = (
     "https://youtube-experiment.vercel.app/writing-task-90.html"
 )
@@ -140,7 +140,7 @@ def make_short_block() -> str:
 ↓
 
 [2] ショート動画後のアンケート:
-添付ファイル参照：{NASA_TASK_FILE}
+{NASA_TASK_URL}
 ↓
 
 [3] 2分間の映画予告映像URL:
@@ -157,7 +157,7 @@ def make_meditation_block() -> str:
 ↓
 
 [2] 瞑想動画後のアンケート:
-添付ファイル参照：{NASA_TASK_FILE}
+{NASA_TASK_URL}
 ↓
 
 [3] 2分間の映画予告映像URL:
@@ -185,7 +185,7 @@ def make_daily_block() -> str:
 ↓
 
 [3] 日常動画後のアンケート:
-添付ファイル参照：{NASA_TASK_FILE}
+{NASA_TASK_URL}
 ↓
 
 [4] 2分間の映画予告映像URL:

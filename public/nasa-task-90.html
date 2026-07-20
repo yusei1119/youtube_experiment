@@ -36,27 +36,26 @@
 
   <div id="intro-screen" class="card">
     <h2>はじめに</h2>
-    <p class="small">直前の動画視聴タスクについて回答してください。このファイルはダウンロード後、Chrome・Edge・Safariなどのブラウザで開いてください。送信にはインターネット接続が必要です。</p>
+    <p class="small">直前の動画視聴タスクについて回答してください。このページはChrome・Edge・Safariなどのブラウザで開いてください。送信にはインターネット接続が必要です。</p>
     <div id="browser-warning" class="small error hidden"></div>
     <label for="participant-id">実験参加者ID</label>
     <input type="text" id="participant-id" autocomplete="off" placeholder="例: A001">
     <div class="buttons"><button id="start-button" class="primary">次へ</button></div>
   </div>
 
-  <div id="duration-screen" class="card hidden">
-    <h2>ショート動画の視聴時間</h2>
-    <p class="small">前の手順で視聴したショート動画の視聴時間を選択してください。</p>
-    <label for="viewing-duration">前の手順で視聴したショート動画の視聴時間</label>
-    <select id="viewing-duration">
+  <div id="condition-screen" class="card hidden">
+    <div id="condition-progress" class="small"></div>
+    <h2>実験条件の選択</h2>
+    <p class="small">直前に視聴した動画の条件を選択してください。</p>
+    <p id="condition-note" class="small"></p>
+    <label for="video-condition">実験条件</label>
+    <select id="video-condition">
       <option value="">選択してください</option>
-      <option value="5min">5分</option>
-      <option value="10min">10分</option>
-      <option value="15min">15分</option>
-      <option value="20min">20分</option>
-      <option value="25min">25分</option>
-      <option value="30min">30分</option>
+      <option value="short">ショート動画</option>
+      <option value="med">瞑想動画</option>
+      <option value="control">日常動画</option>
     </select>
-    <div class="buttons"><button id="duration-start-button" class="primary">アンケートを開始</button></div>
+    <div class="buttons"><button id="condition-start-button" class="primary">アンケートを開始</button></div>
   </div>
 
   <div id="question-screen" class="card hidden">
@@ -82,6 +81,7 @@
     <div class="buttons center-buttons">
       <button id="finish-back-button">戻る</button>
       <button id="submit-button" class="primary">送信</button>
+      <button id="continue-button" class="primary hidden">次の条件へ</button>
     </div>
   </div>
 
@@ -90,7 +90,8 @@
 
     const SUPABASE_URL = "https://izilkytvtjzpdsbyznsj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6aWxreXR2dGp6cGRzYnl6bnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTY1NDksImV4cCI6MjA5MzU3MjU0OX0.LQNatdpRM5zA4q4s6WEMGxB4yfaemCJVkjgf556A_Yg";
-    const SURVEY_ID = "nasa_task_60";
+    const SURVEY_ID = "nasa_task_90";
+    const TOTAL_CONDITIONS = 3;
 
     const QUESTIONS = [
       { key: "mental", id: "NTX_Mental", title: "精神的要求", prompt: "Q1. 直前の動画視聴タスクを行うために、どの程度頭を使いましたか？（考える、決める、記憶する、見るなど）", minLabel: "小さい", maxLabel: "大きい", standard: true },
@@ -103,16 +104,19 @@
     ];
 
     const introScreen = document.getElementById("intro-screen");
-    const durationScreen = document.getElementById("duration-screen");
+    const conditionScreen = document.getElementById("condition-screen");
     const questionScreen = document.getElementById("question-screen");
     const finishScreen = document.getElementById("finish-screen");
     const participantIdInput = document.getElementById("participant-id");
-    const viewingDurationInput = document.getElementById("viewing-duration");
+    const videoConditionInput = document.getElementById("video-condition");
+    const conditionProgress = document.getElementById("condition-progress");
+    const conditionNote = document.getElementById("condition-note");
     const startButton = document.getElementById("start-button");
-    const durationStartButton = document.getElementById("duration-start-button");
+    const conditionStartButton = document.getElementById("condition-start-button");
     const backButton = document.getElementById("back-button");
     const nextButton = document.getElementById("next-button");
     const submitButton = document.getElementById("submit-button");
+    const continueButton = document.getElementById("continue-button");
     const finishBackButton = document.getElementById("finish-back-button");
     const progressLabel = document.getElementById("progress-label");
     const sectionTitle = document.getElementById("section-title");
@@ -126,7 +130,8 @@
     const finishMessage = document.getElementById("finish-message");
 
     let participantId = "";
-    let viewingDuration = "";
+    let videoCondition = "";
+    let conditionIndex = 0;
     let currentIndex = 0;
     let states = [];
     let questionVisitStartedMs = null;
@@ -135,6 +140,7 @@
     let surveyStartPerfMs = null;
     let questionnaireHasStarted = false;
     let submitted = false;
+    const submittedConditions = new Set();
     const browserCrypto = window.crypto;
     const pageSessionId = browserCrypto && typeof browserCrypto.randomUUID === "function"
       ? browserCrypto.randomUUID()
@@ -154,9 +160,9 @@
       sliderTicks.appendChild(tick);
     }
 
-    function initialiseQuestionnaire() {
-      viewingDuration = "";
-      viewingDurationInput.value = "";
+    function initialiseCondition() {
+      videoCondition = "";
+      videoConditionInput.value = "";
       states = QUESTIONS.map(() => ({
         value: null,
         firstShownMs: null,
@@ -175,25 +181,34 @@
       submitStatus.className = "small";
       submitButton.disabled = false;
       finishBackButton.disabled = false;
+      continueButton.classList.add("hidden");
       finishTitle.textContent = "回答の確認";
       finishMessage.textContent = "この条件の全7項目に回答しました。「送信」を押してください。";
     }
 
     function showOnly(screen) {
-      [introScreen, durationScreen, questionScreen, finishScreen].forEach(item => item.classList.add("hidden"));
+      [introScreen, conditionScreen, questionScreen, finishScreen].forEach(item => item.classList.add("hidden"));
       screen.classList.remove("hidden");
     }
 
-    function showDurationSelection() {
-      showOnly(durationScreen);
-      viewingDurationInput.focus();
+    function showConditionSelection() {
+      conditionProgress.textContent = `条件 ${conditionIndex + 1} / ${TOTAL_CONDITIONS}`;
+      for (const option of videoConditionInput.options) {
+        if (option.value) option.disabled = submittedConditions.has(option.value);
+      }
+      const remaining = [...videoConditionInput.options]
+        .filter(option => option.value && !option.disabled)
+        .map(option => option.textContent);
+      conditionNote.textContent = `未回答の条件: ${remaining.join("、")}`;
+      showOnly(conditionScreen);
+      videoConditionInput.focus();
     }
 
     function showQuestion(index) {
       const question = QUESTIONS[index];
       const state = states[index];
       const now = performance.now();
-      progressLabel.textContent = `質問 ${index + 1} / ${QUESTIONS.length}`;
+      progressLabel.textContent = `条件 ${conditionIndex + 1} / ${TOTAL_CONDITIONS} ・ 質問 ${index + 1} / ${QUESTIONS.length}`;
       sectionTitle.textContent = question.title;
       questionText.textContent = question.prompt;
       sliderMinLabel.textContent = question.minLabel;
@@ -224,17 +239,19 @@
         return;
       }
       participantId = value;
-      initialiseQuestionnaire();
-      showDurationSelection();
+      conditionIndex = 0;
+      submittedConditions.clear();
+      initialiseCondition();
+      showConditionSelection();
     }
 
-    function handleDurationStart() {
-      if (!viewingDurationInput.value) {
-        alert("ショート動画の視聴時間を選択してください。");
-        viewingDurationInput.focus();
+    function handleConditionStart() {
+      if (!videoConditionInput.value) {
+        alert("実験条件を選択してください。");
+        videoConditionInput.focus();
         return;
       }
-      viewingDuration = viewingDurationInput.value;
+      videoCondition = videoConditionInput.value;
       if (!questionnaireHasStarted) {
         surveyStartedAt = new Date();
         surveyStartPerfMs = performance.now();
@@ -258,8 +275,8 @@
     function handleBack() {
       saveCurrentVisit();
       if (currentIndex === 0) {
-        viewingDurationInput.value = viewingDuration;
-        showDurationSelection();
+        videoConditionInput.value = videoCondition;
+        showConditionSelection();
         return;
       }
       currentIndex -= 1;
@@ -299,8 +316,9 @@
       return {
         survey_id: SURVEY_ID,
         participant_id: participantId,
-        viewing_duration: viewingDuration,
-        questionnaire_number: 1,
+        video_condition: videoCondition,
+        condition_order: conditionIndex + 1,
+        total_conditions: TOTAL_CONDITIONS,
         page_session_id: pageSessionId,
         started_at: surveyStartedAt.toISOString(),
         completed_at: new Date().toISOString(),
@@ -315,7 +333,7 @@
 
     async function sendToSupabase(payload) {
       if (navigator.onLine === false) throw new Error("インターネットに接続されていません。");
-      const response = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/rpc/submit_nasa_60_survey`, {
+      const response = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/rpc/submit_nasa_90_survey`, {
         method: "POST",
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -337,10 +355,16 @@
       try {
         await sendToSupabase(buildPayload());
         submitted = true;
+        submittedConditions.add(videoCondition);
         submitStatus.className = "small success";
-        finishTitle.textContent = "アンケート完了";
-        finishMessage.textContent = "回答の送信が完了しました。";
-        submitStatus.textContent = "ご協力ありがとうございました。";
+        if (conditionIndex < TOTAL_CONDITIONS - 1) {
+          submitStatus.textContent = `条件${conditionIndex + 1}を送信しました。「次の条件へ」を押してください。`;
+          continueButton.classList.remove("hidden");
+        } else {
+          finishTitle.textContent = "全条件完了";
+          finishMessage.textContent = "3条件全ての回答を送信しました。";
+          submitStatus.textContent = "ご協力ありがとうございました。";
+        }
       } catch (error) {
         console.error(error);
         submitStatus.className = "small error";
@@ -348,6 +372,13 @@
         submitButton.disabled = false;
         finishBackButton.disabled = false;
       }
+    }
+
+    function handleContinue() {
+      if (!submitted || conditionIndex >= TOTAL_CONDITIONS - 1) return;
+      conditionIndex += 1;
+      initialiseCondition();
+      showConditionSelection();
     }
 
     sliderInput.addEventListener("input", () => {
@@ -360,11 +391,12 @@
     });
     participantIdInput.addEventListener("keydown", event => { if (event.key === "Enter") handleStart(); });
     startButton.addEventListener("click", handleStart);
-    durationStartButton.addEventListener("click", handleDurationStart);
+    conditionStartButton.addEventListener("click", handleConditionStart);
     nextButton.addEventListener("click", handleNext);
     backButton.addEventListener("click", handleBack);
     finishBackButton.addEventListener("click", handleFinishBack);
     submitButton.addEventListener("click", handleSubmit);
+    continueButton.addEventListener("click", handleContinue);
   </script>
 </body>
 </html>

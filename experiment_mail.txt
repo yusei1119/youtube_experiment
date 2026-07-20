@@ -9,7 +9,7 @@ https://youtube-experiment.vercel.app/
 ↓
 
 [2] ショート動画後のアンケート:
-添付ファイル参照：NASA_task_90.html
+https://youtube-experiment.vercel.app/nasa-task-90.html
 ↓
 
 [3] 2分間の映画予告映像URL:
@@ -29,7 +29,7 @@ https://drive.google.com/file/d/1JbmShwdUFkXOnLbwJp-MvXP0iJGA8z6O/view?usp=shari
 ↓
 
 [2] 瞑想動画後のアンケート:
-添付ファイル参照：NASA_task_90.html
+https://youtube-experiment.vercel.app/nasa-task-90.html
 ↓
 
 [3] 2分間の映画予告映像URL:
@@ -53,7 +53,7 @@ https://docs.google.com/forms/d/e/1FAIpQLScm74jQ2QxhQ8_tBzJDKOP6Po17RVnqR7KiZmXi
 ↓
 
 [3] 日常動画後のアンケート:
-添付ファイル参照：NASA_task_90.html
+https://youtube-experiment.vercel.app/nasa-task-90.html
 ↓
 
 [4] 2分間の映画予告映像URL:

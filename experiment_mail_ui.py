@@ -281,7 +281,9 @@ class ExperimentMailUI:
 
         self.preview.delete("1.0", "end")
         self.preview.insert("1.0", text)
-        self.status.set("本文を生成しました。実験後アンケートは常に最後に配置されます。")
+        self.status.set(
+            "本文を生成しました。NASA課題・記述タスクはURLで案内されます。"
+        )
 
     def _add_meditation_stretch_break(self, text: str) -> str:
         """瞑想動画URLの直後に3分30秒のストレッチ休憩を追加する。"""
