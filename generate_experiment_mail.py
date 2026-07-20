@@ -99,7 +99,9 @@ CONDITION_NAMES = {
 }
 
 NASA_TASK_FILE = "NASA_task_90.html"
-WRITING_TASK_FILE = "Writing_task_90.html"
+WRITING_TASK_URL = (
+    "https://youtube-experiment.vercel.app/writing-task-90.html"
+)
 SEPARATOR = "*" * 24
 
 
@@ -146,7 +148,7 @@ def make_short_block() -> str:
 ↓
 
 [4] ショート動画後の記述タスク:
-添付ファイル参照：{WRITING_TASK_FILE}"""
+{WRITING_TASK_URL}"""
 
 
 def make_meditation_block() -> str:
@@ -163,7 +165,7 @@ def make_meditation_block() -> str:
 ↓
 
 [4] 瞑想動画後の記述タスク:
-添付ファイル参照：{WRITING_TASK_FILE}"""
+{WRITING_TASK_URL}"""
 
 
 def make_daily_block() -> str:
@@ -191,7 +193,7 @@ def make_daily_block() -> str:
 ↓
 
 [5] 日常動画後の記述タスク:
-添付ファイル参照：{WRITING_TASK_FILE}"""
+{WRITING_TASK_URL}"""
 
 
 BLOCK_BUILDERS = {

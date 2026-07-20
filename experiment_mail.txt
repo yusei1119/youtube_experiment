@@ -17,7 +17,7 @@ https://drive.google.com/file/d/1KPx7E5qjovn7aYjQ_2gMy0Aiiw5WEISY/view?usp=shari
 ↓
 
 [4] ショート動画後の記述タスク:
-添付ファイル参照：Writing_task_90.html
+https://youtube-experiment.vercel.app/writing-task-90.html
 
 休憩（3分）
 
@@ -37,7 +37,7 @@ https://drive.google.com/file/d/1WWLCzHESQl3aLkDKoj314iw2jHFTO1Gu/view?usp=drive
 ↓
 
 [4] 瞑想動画後の記述タスク:
-添付ファイル参照：Writing_task_90.html
+https://youtube-experiment.vercel.app/writing-task-90.html
 
 休憩（3分）
 
@@ -61,7 +61,7 @@ https://drive.google.com/file/d/1EZPGKXA5mq9G08ksG4glzTxLZ82HRe--/view?usp=drive
 ↓
 
 [5] 日常動画後の記述タスク:
-添付ファイル参照：Writing_task_90.html
+https://youtube-experiment.vercel.app/writing-task-90.html
 
 ************************
 [6] 実験後のアンケートURL:

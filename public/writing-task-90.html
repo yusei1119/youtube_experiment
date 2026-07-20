@@ -32,27 +32,26 @@
   <div id="intro-screen" class="card">
     <h2>はじめに</h2>
     <p class="small">この課題は能力を判定するものではありません。何かで調べたりせず、自分の言葉で回答してください。</p>
-    <p class="small">このファイルはダウンロード後、Chrome・Edge・Safariなどのブラウザで開いてください。回答の送信にはインターネット接続が必要です。</p>
+    <p class="small">このページはChrome・Edge・Safariなどのブラウザで開いてください。回答の送信にはインターネット接続が必要です。</p>
     <div id="browser-warning" class="small error hidden"></div>
     <label for="participant-id">実験参加者ID</label>
-    <input type="text" id="participant-id" autocomplete="off" placeholder="実験参加者IDを入力してください．例: B001, B002" />
+    <input type="text" id="participant-id" autocomplete="off" placeholder="実験参加者IDを入力してください．例: A001">
     <div class="buttons"><button id="start-button" class="primary">次へ</button></div>
   </div>
 
-  <div id="duration-screen" class="card hidden">
-    <h2>ショート動画の視聴時間</h2>
-    <p class="small">前の手順で視聴したショート動画の視聴時間を選択してください。</p>
-    <label for="viewing-duration">前の手順で視聴したショート動画の視聴時間</label>
-    <select id="viewing-duration">
+  <div id="condition-screen" class="card hidden">
+    <div id="condition-progress" class="small"></div>
+    <h2>実験条件の選択</h2>
+    <p class="small">このアンケートの直前に視聴した動画の条件を選択してください。</p>
+    <p id="condition-note" class="small"></p>
+    <label for="video-condition">実験条件</label>
+    <select id="video-condition">
       <option value="">選択してください</option>
-      <option value="5min">5分</option>
-      <option value="10min">10分</option>
-      <option value="15min">15分</option>
-      <option value="20min">20分</option>
-      <option value="25min">25分</option>
-      <option value="30min">30分</option>
+      <option value="short">ショート動画</option>
+      <option value="med">瞑想動画</option>
+      <option value="control">日常動画</option>
     </select>
-    <div class="buttons"><button id="duration-start-button" class="primary">アンケートを開始</button></div>
+    <div class="buttons"><button id="condition-start-button" class="primary">アンケートを開始</button></div>
   </div>
 
   <div id="question-screen" class="card hidden">
@@ -74,6 +73,7 @@
     <div class="buttons center-buttons">
       <button id="finish-back-button">戻る</button>
       <button id="submit-button" class="primary">送信</button>
+      <button id="continue-button" class="primary hidden">次のアンケートへ</button>
     </div>
   </div>
 
@@ -84,11 +84,11 @@
     // service_role key は絶対にHTMLへ記載しないでください。
     const SUPABASE_URL = "https://izilkytvtjzpdsbyznsj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6aWxreXR2dGp6cGRzYnl6bnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTY1NDksImV4cCI6MjA5MzU3MjU0OX0.LQNatdpRM5zA4q4s6WEMGxB4yfaemCJVkjgf556A_Yg";
-    const SURVEY_ID = "writing_task_60";
-    const TOTAL_QUESTIONNAIRES = 1;
+    const SURVEY_ID = "writing_short_90";
+    const TOTAL_QUESTIONNAIRES = 3;
 
-    // 各カテゴリの3候補から1問をランダム選択する。
-    // 「一般」は先頭、残りのカテゴリ順はランダム。
+    // 各カテゴリに固有の3候補を用意する。下の buildConditionSets() により、
+    // 各候補は3条件のいずれか1つだけに割り当てられる。
     const QUESTION_VARIANTS = {
       general: {
         label: "一般",
@@ -141,16 +141,19 @@
     const REST_CATEGORIES = CATEGORY_KEYS.filter(key => key !== "general");
 
     const introScreen = document.getElementById("intro-screen");
-    const durationScreen = document.getElementById("duration-screen");
+    const conditionScreen = document.getElementById("condition-screen");
     const questionScreen = document.getElementById("question-screen");
     const finishScreen = document.getElementById("finish-screen");
     const participantIdInput = document.getElementById("participant-id");
-    const viewingDurationInput = document.getElementById("viewing-duration");
+    const videoConditionInput = document.getElementById("video-condition");
+    const conditionProgress = document.getElementById("condition-progress");
+    const conditionNote = document.getElementById("condition-note");
     const startButton = document.getElementById("start-button");
-    const durationStartButton = document.getElementById("duration-start-button");
+    const conditionStartButton = document.getElementById("condition-start-button");
     const backButton = document.getElementById("back-button");
     const nextButton = document.getElementById("next-button");
     const submitButton = document.getElementById("submit-button");
+    const continueButton = document.getElementById("continue-button");
     const finishBackButton = document.getElementById("finish-back-button");
     const progressLabel = document.getElementById("progress-label");
     const categoryLabel = document.getElementById("category-label");
@@ -161,7 +164,7 @@
     const finishMessage = document.getElementById("finish-message");
 
     let participantId = "";
-    let viewingDuration = "";
+    let videoCondition = "";
     let questionnaireIndex = 0;
     let questions = [];
     let states = [];
@@ -172,8 +175,9 @@
     let surveyStartPerfMs = null;
     let submitted = false;
     let questionnaireHasStarted = false;
+    const submittedConditions = new Set();
 
-    // ページを開くたびに新しくなる質問順のランダム化ID。
+    // ページを開くたびに新しくなる値。3アンケート全体のランダム割当を識別する。
     const browserCrypto = window.crypto;
     const pageRandomizationId = browserCrypto && typeof browserCrypto.randomUUID === "function"
       ? browserCrypto.randomUUID()
@@ -216,35 +220,40 @@
     }
 
     function buildQuestionnaires() {
-      const selectedQuestions = [];
+      const sets = Array.from({ length: TOTAL_QUESTIONNAIRES }, () => []);
       for (const categoryKey of CATEGORY_KEYS) {
         const category = QUESTION_VARIANTS[categoryKey];
-        const random = mulberry32(hashString(`${pageRandomizationId}:variant:${categoryKey}`));
-        const variantIndex = Math.floor(random() * category.prompts.length);
-        selectedQuestions.push({
-          id: `${categoryKey}_v${variantIndex + 1}`,
-          categoryKey,
-          category: category.label,
-          variant: variantIndex + 1,
-          prompt: `Q${category.questionNumber}. ${category.prompts[variantIndex]}`
-        });
+        // 3候補をシャッフルして1回ずつ使うため、同じカテゴリ内で重複しない。
+        const variantOrder = shuffled([0, 1, 2], `${pageRandomizationId}:${categoryKey}`);
+        for (let roundIndex = 0; roundIndex < TOTAL_QUESTIONNAIRES; roundIndex += 1) {
+          const variantIndex = variantOrder[roundIndex];
+          sets[roundIndex].push({
+            id: `${categoryKey}_v${variantIndex + 1}`,
+            categoryKey,
+            category: category.label,
+            variant: variantIndex + 1,
+            prompt: `Q${category.questionNumber}. ${category.prompts[variantIndex]}`
+          });
+        }
       }
-      const selectedByCategory = Object.fromEntries(
-        selectedQuestions.map(question => [question.categoryKey, question])
-      );
-      const categoryOrder = [
-        "general",
-        ...shuffled(REST_CATEGORIES, `${pageRandomizationId}:order`)
-      ];
-      return [categoryOrder.map(key => selectedByCategory[key])];
+      return sets.map((set, roundIndex) => {
+        const selectedByCategory = Object.fromEntries(
+          set.map(question => [question.categoryKey, question])
+        );
+        const categoryOrder = [
+          "general",
+          ...shuffled(REST_CATEGORIES, `${pageRandomizationId}:order:${roundIndex}`)
+        ];
+        return categoryOrder.map(key => selectedByCategory[key]);
+      });
     }
 
     const QUESTIONNAIRES = buildQuestionnaires();
 
     function initialiseQuestionnaire() {
       questions = QUESTIONNAIRES[questionnaireIndex];
-      viewingDuration = "";
-      viewingDurationInput.value = "";
+      videoCondition = "";
+      videoConditionInput.value = "";
       states = questions.map(() => ({
         answer: "",
         firstShownMs: null,
@@ -263,13 +272,14 @@
       submitStatus.className = "small";
       submitButton.disabled = false;
       finishBackButton.disabled = false;
+      continueButton.classList.add("hidden");
     }
 
     function showQuestion(index) {
       const question = questions[index];
       const state = states[index];
       const now = performance.now();
-      progressLabel.textContent = `質問 ${index + 1} / ${questions.length}`;
+      progressLabel.textContent = `アンケート ${questionnaireIndex + 1} / ${TOTAL_QUESTIONNAIRES} ・ 質問 ${index + 1} / ${questions.length}`;
       categoryLabel.textContent = question.category;
       questionText.textContent = question.prompt;
       answerText.value = state.answer;
@@ -298,13 +308,21 @@
     }
 
     function showOnly(screen) {
-      [introScreen, durationScreen, questionScreen, finishScreen].forEach(item => item.classList.add("hidden"));
+      [introScreen, conditionScreen, questionScreen, finishScreen].forEach(item => item.classList.add("hidden"));
       screen.classList.remove("hidden");
     }
 
-    function showDurationSelection() {
-      showOnly(durationScreen);
-      viewingDurationInput.focus();
+    function showConditionSelection() {
+      conditionProgress.textContent = `アンケート ${questionnaireIndex + 1} / ${TOTAL_QUESTIONNAIRES}`;
+      for (const option of videoConditionInput.options) {
+        if (option.value) option.disabled = submittedConditions.has(option.value);
+      }
+      const remainingLabels = [...videoConditionInput.options]
+        .filter(option => option.value && !option.disabled)
+        .map(option => option.textContent);
+      conditionNote.textContent = `未回答の条件: ${remainingLabels.join("、")}`;
+      showOnly(conditionScreen);
+      videoConditionInput.focus();
     }
 
     function handleStart() {
@@ -315,19 +333,20 @@
         return;
       }
       participantId = value;
+      submittedConditions.clear();
       questionnaireIndex = 0;
       initialiseQuestionnaire();
-      showDurationSelection();
+      showConditionSelection();
     }
 
-    function handleDurationStart() {
-      const selectedDuration = viewingDurationInput.value;
-      if (!selectedDuration) {
-        alert("ショート動画の視聴時間を選択してください。");
-        viewingDurationInput.focus();
+    function handleConditionStart() {
+      const selectedCondition = videoConditionInput.value;
+      if (!selectedCondition) {
+        alert("実験条件を選択してください。");
+        videoConditionInput.focus();
         return;
       }
-      viewingDuration = selectedDuration;
+      videoCondition = selectedCondition;
       if (!questionnaireHasStarted) {
         surveyStartedAt = new Date();
         surveyStartPerfMs = performance.now();
@@ -351,8 +370,8 @@
     function handleBack() {
       saveCurrentVisit();
       if (currentIndex === 0) {
-        viewingDurationInput.value = viewingDuration;
-        showDurationSelection();
+        videoConditionInput.value = videoCondition;
+        showConditionSelection();
         return;
       }
       currentIndex -= 1;
@@ -391,9 +410,10 @@
       return {
         survey_id: SURVEY_ID,
         participant_id: participantId,
-        viewing_duration: viewingDuration,
+        video_condition: videoCondition,
         questionnaire_number: questionnaireIndex + 1,
         total_questionnaires: TOTAL_QUESTIONNAIRES,
+        condition_number: questionnaireIndex + 1,
         assignment_seed: pageRandomizationId,
         page_randomization_id: pageRandomizationId,
         started_at: surveyStartedAt.toISOString(),
@@ -412,7 +432,7 @@
       if (SUPABASE_URL.includes("YOUR_PROJECT") || SUPABASE_ANON_KEY.includes("YOUR_")) {
         throw new Error("HTML内のSUPABASE_URLとSUPABASE_ANON_KEYを設定してください。");
       }
-      const response = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/rpc/submit_writing_60_survey`, {
+      const response = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/rpc/submit_writing_survey`, {
         method: "POST",
         headers: {
           apikey: SUPABASE_ANON_KEY,
@@ -441,10 +461,16 @@
       try {
         await sendToSupabase(buildPayload());
         submitted = true;
+        submittedConditions.add(videoCondition);
         submitStatus.className = "small success";
-        finishTitle.textContent = "アンケート完了";
-        finishMessage.textContent = "回答の送信が完了しました。";
-        submitStatus.textContent = "ご協力ありがとうございました。";
+        if (questionnaireIndex < TOTAL_QUESTIONNAIRES - 1) {
+          submitStatus.textContent = `アンケート${questionnaireIndex + 1}を送信しました。「次のアンケートへ」を押してください。`;
+          continueButton.classList.remove("hidden");
+        } else {
+          finishTitle.textContent = "全アンケート完了";
+          finishMessage.textContent = "3つ全てのアンケートの送信が完了しました。";
+          submitStatus.textContent = "ご協力ありがとうございました。";
+        }
       } catch (error) {
         console.error(error);
         submitStatus.className = "small error";
@@ -452,6 +478,13 @@
         submitButton.disabled = false;
         finishBackButton.disabled = false;
       }
+    }
+
+    function handleContinue() {
+      if (!submitted || questionnaireIndex >= TOTAL_QUESTIONNAIRES - 1) return;
+      questionnaireIndex += 1;
+      initialiseQuestionnaire();
+      showConditionSelection();
     }
 
     answerText.addEventListener("input", () => {
@@ -467,11 +500,12 @@
       if (event.key === "Enter") handleStart();
     });
     startButton.addEventListener("click", handleStart);
-    durationStartButton.addEventListener("click", handleDurationStart);
+    conditionStartButton.addEventListener("click", handleConditionStart);
     nextButton.addEventListener("click", handleNext);
     backButton.addEventListener("click", handleBack);
     finishBackButton.addEventListener("click", handleFinishBack);
     submitButton.addEventListener("click", handleSubmit);
+    continueButton.addEventListener("click", handleContinue);
   </script>
 </body>
 </html>

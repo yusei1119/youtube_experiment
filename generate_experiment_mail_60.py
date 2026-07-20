@@ -19,7 +19,9 @@ TRAILER_URLS = {
 
 SHORT_VIDEO_URL = "https://youtube-experiment.vercel.app/"
 NASA_TASK_FILE = "NASA_task_60.html"
-WRITING_TASK_FILE = "Writing_task_60.html"
+WRITING_TASK_URL = (
+    "https://youtube-experiment.vercel.app/writing-task-60.html"
+)
 FINAL_SURVEY_URL = "https://forms.gle/zhTjncyo8sH6UgKY7"
 SEPARATOR = "*" * 24
 
@@ -67,7 +69,7 @@ def generate_mail(
 ↓
 
 [4] ショート動画後の記述タスク:
-添付ファイル参照：{WRITING_TASK_FILE}
+{WRITING_TASK_URL}
 ↓
 
 [5] 実験後のアンケートURL:
