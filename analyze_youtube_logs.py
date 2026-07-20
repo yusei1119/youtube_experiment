@@ -179,6 +179,21 @@ def load_video_category_cache(path):
     return cache.dropna(subset=["video_id"]).drop_duplicates("video_id")
 
 
+def save_video_category_cache(fetched, path=VIDEO_CATEGORY_CACHE_CSV):
+    """APIで取得したカテゴリを保存し、次回以降のAPI呼び出しを不要にする。"""
+    if fetched.empty:
+        return
+    existing = load_video_category_cache(path)
+    combined = pd.concat([existing, fetched], ignore_index=True)
+    combined = (
+        combined[["video_id", "video_category_id", "video_category"]]
+        .dropna(subset=["video_id"])
+        .drop_duplicates("video_id", keep="last")
+        .sort_values("video_id")
+    )
+    combined.to_csv(path, index=False, encoding="utf-8-sig")
+
+
 def _fetch_youtube_json(endpoint, params):
     query = urllib.parse.urlencode(params)
     url = f"https://www.googleapis.com/youtube/v3/{endpoint}?{query}"
@@ -272,6 +287,8 @@ def fetch_missing_categories(video):
     fetched = fetch_youtube_video_categories(missing, api_key)
     if fetched.empty:
         return video
+
+    save_video_category_cache(fetched)
 
     video = video.merge(fetched, on="video_id", how="left", suffixes=("", "_fetched"))
     video["video_category_id"] = video["video_category_id"].where(
