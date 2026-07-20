@@ -28,7 +28,12 @@ class ExperimentMailUI:
             for key in CONDITION_KEYS
         }
         self.daily_material = tk.StringVar(value=str(mail.DAILY_MATERIAL_SELECTION))
-        self.status = tk.StringVar(value="設定を選び、「本文を生成」を押してください。")
+        self.status = tk.StringVar(
+            value=(
+                "認知負荷アンケート・記述タスクのURLは最初の条件だけ表示します。"
+                "設定を選び、「本文を生成」を押してください。"
+            )
+        )
 
         self._configure_style()
         self._build_layout()
@@ -282,7 +287,7 @@ class ExperimentMailUI:
         self.preview.delete("1.0", "end")
         self.preview.insert("1.0", text)
         self.status.set(
-            "本文を生成しました。NASA課題・記述タスクはURLで案内されます。"
+            "本文を生成しました。最初の条件はURL、2回目以降は同じタブを使う案内です。"
         )
 
     def _add_meditation_stretch_break(self, text: str) -> str:

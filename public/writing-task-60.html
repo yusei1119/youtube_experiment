@@ -52,7 +52,7 @@
       <option value="25min">25分</option>
       <option value="30min">30分</option>
     </select>
-    <div class="buttons"><button id="duration-start-button" class="primary">アンケートを開始</button></div>
+    <div class="buttons"><button id="duration-start-button" class="primary">記述タスクを開始</button></div>
   </div>
 
   <div id="question-screen" class="card hidden">
@@ -69,7 +69,7 @@
 
   <div id="finish-screen" class="card hidden">
     <h2 id="finish-title">回答の確認</h2>
-    <p id="finish-message">このアンケートの全ての質問に回答しました。必要であれば「戻る」で確認・修正してから、「送信」を押してください。</p>
+    <p id="finish-message">記述タスクに回答しました。必要であれば「戻る」で確認・修正してから、「送信」を押してください。</p>
     <div id="submit-status" class="small" aria-live="polite"></div>
     <div class="buttons center-buttons">
       <button id="finish-back-button">戻る</button>
@@ -442,8 +442,8 @@
         await sendToSupabase(buildPayload());
         submitted = true;
         submitStatus.className = "small success";
-        finishTitle.textContent = "アンケート完了";
-        finishMessage.textContent = "回答の送信が完了しました。";
+        finishTitle.textContent = "記述タスク完了";
+        finishMessage.textContent = "記述タスクの送信が完了しました。";
         submitStatus.textContent = "ご協力ありがとうございました。";
       } catch (error) {
         console.error(error);

@@ -8,16 +8,20 @@ XX
 https://youtube-experiment.vercel.app/
 ↓
 
-[2] ショート動画後のアンケート:
+[2] 認知負荷アンケート:
 https://youtube-experiment.vercel.app/nasa-task-90.html
+【重要】このページは3条件で共通して使用します。実験が終わるまでタブを閉じないでください。
+【送信後】このタブは閉じず、実験案内メールに戻って次のタスクへ進んでください。
 ↓
 
 [3] 2分間の映画予告映像URL:
 https://drive.google.com/file/d/1KPx7E5qjovn7aYjQ_2gMy0Aiiw5WEISY/view?usp=sharing
 ↓
 
-[4] ショート動画後の記述タスク:
+[4] 記述タスク:
 https://youtube-experiment.vercel.app/writing-task-90.html
+【重要】このページは3条件で共通して使用します。実験が終わるまでタブを閉じないでください。
+【送信後】このタブは閉じず、実験案内メールに戻って次のタスクへ進んでください。
 
 休憩（3分）
 
@@ -28,16 +32,20 @@ https://youtube-experiment.vercel.app/writing-task-90.html
 https://drive.google.com/file/d/1JbmShwdUFkXOnLbwJp-MvXP0iJGA8z6O/view?usp=sharing
 ↓
 
-[2] 瞑想動画後のアンケート:
-https://youtube-experiment.vercel.app/nasa-task-90.html
+[2] 認知負荷アンケート:
+【2回目以降】前の条件で開いた「認知負荷アンケート」のタブに戻ってください。
+画面下の「次の条件の回答を開始」を押してから、直前に視聴した動画条件を選んで回答してください。
+【送信後】このタブは閉じず、実験案内メールに戻って次のタスクへ進んでください。
 ↓
 
 [3] 2分間の映画予告映像URL:
 https://drive.google.com/file/d/1WWLCzHESQl3aLkDKoj314iw2jHFTO1Gu/view?usp=drive_link
 ↓
 
-[4] 瞑想動画後の記述タスク:
-https://youtube-experiment.vercel.app/writing-task-90.html
+[4] 記述タスク:
+【2回目以降】前の条件で開いた「記述タスク」のタブに戻ってください。
+画面下の「次の条件の回答を開始」を押してから、直前に視聴した動画条件を選んで回答してください。
+【送信後】このタブは閉じず、実験案内メールに戻って次のタスクへ進んでください。
 
 休憩（3分）
 
@@ -52,16 +60,20 @@ https://drive.google.com/file/d/1gfa9WprHTOXuAOP1SQv4G6E6iUqZu-_y/view?usp=shari
 https://docs.google.com/forms/d/e/1FAIpQLScm74jQ2QxhQ8_tBzJDKOP6Po17RVnqR7KiZmXiTfceQWahPA/viewform?usp=sharing&ouid=107569946836489283456
 ↓
 
-[3] 日常動画後のアンケート:
-https://youtube-experiment.vercel.app/nasa-task-90.html
+[3] 認知負荷アンケート:
+【2回目以降】前の条件で開いた「認知負荷アンケート」のタブに戻ってください。
+画面下の「次の条件の回答を開始」を押してから、直前に視聴した動画条件を選んで回答してください。
+【送信後】このタブは閉じず、実験案内メールに戻って次のタスクへ進んでください。
 ↓
 
 [4] 2分間の映画予告映像URL:
 https://drive.google.com/file/d/1EZPGKXA5mq9G08ksG4glzTxLZ82HRe--/view?usp=drive_link
 ↓
 
-[5] 日常動画後の記述タスク:
-https://youtube-experiment.vercel.app/writing-task-90.html
+[5] 記述タスク:
+【2回目以降】前の条件で開いた「記述タスク」のタブに戻ってください。
+画面下の「次の条件の回答を開始」を押してから、直前に視聴した動画条件を選んで回答してください。
+【送信後】このタブは閉じず、実験案内メールに戻って次のタスクへ進んでください。
 
 ************************
 [6] 実験後のアンケートURL:

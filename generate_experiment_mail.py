@@ -102,6 +102,13 @@ NASA_TASK_URL = "https://youtube-experiment.vercel.app/nasa-task-90.html"
 WRITING_TASK_URL = (
     "https://youtube-experiment.vercel.app/writing-task-90.html"
 )
+NASA_TASK_NAME = "認知負荷アンケート"
+WRITING_TASK_NAME = "記述タスク"
+NEXT_CONDITION_BUTTON_LABEL = "次の条件の回答を開始"
+KEEP_TAB_OPEN_NOTE = (
+    "【送信後】このタブは閉じず、実験案内メールに戻って"
+    "次のタスクへ進んでください。"
+)
 SEPARATOR = "*" * 24
 
 
@@ -134,41 +141,59 @@ def trailer_url(condition: str) -> str:
     return get_url(TRAILER_URLS, number, "映画予告映像")
 
 
-def make_short_block() -> str:
+def task_access_text(task_name: str, task_url: str, is_first_condition: bool) -> str:
+    """初回はURL、2回目以降は開いたままのタブを使う案内を返す。"""
+    if is_first_condition:
+        access_text = (
+            f"{task_url}\n"
+            "【重要】このページは3条件で共通して使用します。実験が終わるまで"
+            "タブを閉じないでください。"
+        )
+    else:
+        access_text = (
+            f"【2回目以降】前の条件で開いた「{task_name}」のタブに戻ってください。\n"
+            f"画面下の「{NEXT_CONDITION_BUTTON_LABEL}」を押してから、"
+            "直前に視聴した動画条件を選んで回答してください。"
+        )
+
+    return f"{access_text}\n{KEEP_TAB_OPEN_NOTE}"
+
+
+def make_short_block(is_first_condition: bool) -> str:
     return f"""[1] ショート動画**(スマホ)**URL:
 {SHORT_VIDEO_URL}
 ↓
 
-[2] ショート動画後のアンケート:
-{NASA_TASK_URL}
+[2] {NASA_TASK_NAME}:
+{task_access_text(NASA_TASK_NAME, NASA_TASK_URL, is_first_condition)}
 ↓
 
 [3] 2分間の映画予告映像URL:
 {trailer_url("short")}
 ↓
 
-[4] ショート動画後の記述タスク:
-{WRITING_TASK_URL}"""
+[4] {WRITING_TASK_NAME}:
+{task_access_text(WRITING_TASK_NAME, WRITING_TASK_URL, is_first_condition)}"""
 
 
-def make_meditation_block() -> str:
+def make_meditation_block(is_first_condition: bool) -> str:
     return f"""[1] 瞑想動画URL:
 {MEDITATION_VIDEO_URL}
 ↓
 
-[2] 瞑想動画後のアンケート:
-{NASA_TASK_URL}
+[2] {NASA_TASK_NAME}:
+{task_access_text(NASA_TASK_NAME, NASA_TASK_URL, is_first_condition)}
 ↓
 
 [3] 2分間の映画予告映像URL:
 {trailer_url("meditation")}
 ↓
 
-[4] 瞑想動画後の記述タスク:
-{WRITING_TASK_URL}"""
+[4] {WRITING_TASK_NAME}:
+{task_access_text(WRITING_TASK_NAME, WRITING_TASK_URL, is_first_condition)}"""
 
 
-def make_daily_block() -> str:
+def make_daily_block(is_first_condition: bool) -> str:
     daily_url = get_url(DAILY_VIDEO_URLS, DAILY_MATERIAL_SELECTION, "日常動画")
     test_url = get_url(
         COMPREHENSION_TEST_URLS,
@@ -184,16 +209,16 @@ def make_daily_block() -> str:
 {test_url}
 ↓
 
-[3] 日常動画後のアンケート:
-{NASA_TASK_URL}
+[3] {NASA_TASK_NAME}:
+{task_access_text(NASA_TASK_NAME, NASA_TASK_URL, is_first_condition)}
 ↓
 
 [4] 2分間の映画予告映像URL:
 {trailer_url("daily")}
 ↓
 
-[5] 日常動画後の記述タスク:
-{WRITING_TASK_URL}"""
+[5] {WRITING_TASK_NAME}:
+{task_access_text(WRITING_TASK_NAME, WRITING_TASK_URL, is_first_condition)}"""
 
 
 BLOCK_BUILDERS = {
@@ -211,7 +236,7 @@ def generate_mail() -> str:
     for index, condition in enumerate(CONDITION_ORDER, start=1):
         block = (
             f"実験{index}（{CONDITION_NAMES[condition]}条件）\n\n"
-            f"{SEPARATOR}\n{BLOCK_BUILDERS[condition]()}"
+            f"{SEPARATOR}\n{BLOCK_BUILDERS[condition](index == 1)}"
         )
         if index < len(CONDITION_ORDER):
             block += "\n\n休憩（3分）"

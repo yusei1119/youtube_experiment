@@ -22,6 +22,7 @@
     .hidden { display: none; }
     .error { color: #b91c1c; }
     .success { color: #166534; }
+    .keep-open-notice { margin-top: 12px; padding: 10px 12px; border: 2px solid #15803d; border-radius: 6px; background: #f0fdf4; font-weight: 700; }
     .section-title { font-size: 1.35rem; font-weight: 700; margin: 8px 0; }
     .question-text { margin-bottom: 34px; }
     .slider-wrapper { position: relative; padding: 12px 4px 0; }
@@ -36,7 +37,8 @@
 
   <div id="intro-screen" class="card">
     <h2>はじめに</h2>
-    <p class="small">直前の動画視聴タスクについて回答してください。このページはChrome・Edge・Safariなどのブラウザで開いてください。送信にはインターネット接続が必要です。</p>
+    <p class="small">直前の動画視聴タスクについて回答してください。送信にはインターネット接続が必要です。</p>
+    <p class="small keep-open-notice">重要：このページは3条件で共通して使用します。実験が終わるまで、このタブを閉じないでください。</p>
     <div id="browser-warning" class="small error hidden"></div>
     <label for="participant-id">実験参加者ID</label>
     <input type="text" id="participant-id" autocomplete="off" placeholder="例: A001">
@@ -55,7 +57,7 @@
       <option value="med">瞑想動画</option>
       <option value="control">日常動画</option>
     </select>
-    <div class="buttons"><button id="condition-start-button" class="primary">アンケートを開始</button></div>
+    <div class="buttons"><button id="condition-start-button" class="primary">認知負荷アンケートを開始</button></div>
   </div>
 
   <div id="question-screen" class="card hidden">
@@ -81,7 +83,7 @@
     <div class="buttons center-buttons">
       <button id="finish-back-button">戻る</button>
       <button id="submit-button" class="primary">送信</button>
-      <button id="continue-button" class="primary hidden">次の条件へ</button>
+      <button id="continue-button" class="hidden">次の条件の回答を開始</button>
     </div>
   </div>
 
@@ -358,11 +360,14 @@
         submittedConditions.add(videoCondition);
         submitStatus.className = "small success";
         if (conditionIndex < TOTAL_CONDITIONS - 1) {
-          submitStatus.textContent = `条件${conditionIndex + 1}を送信しました。「次の条件へ」を押してください。`;
+          finishTitle.textContent = "送信完了";
+          finishMessage.textContent = `条件${conditionIndex + 1}の認知負荷アンケートを送信しました。`;
+          submitStatus.className = "small success keep-open-notice";
+          submitStatus.textContent = "このタブは閉じず、実験案内メールに戻って次のタスクへ進んでください。「次の条件の回答を開始」は、次の条件の動画視聴後にこのタブへ戻ってから押してください。";
           continueButton.classList.remove("hidden");
         } else {
-          finishTitle.textContent = "全条件完了";
-          finishMessage.textContent = "3条件全ての回答を送信しました。";
+          finishTitle.textContent = "全条件の認知負荷アンケート完了";
+          finishMessage.textContent = "3条件全ての認知負荷アンケートを送信しました。";
           submitStatus.textContent = "ご協力ありがとうございました。";
         }
       } catch (error) {

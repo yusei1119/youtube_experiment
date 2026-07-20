@@ -56,7 +56,7 @@
       <option value="25min">25分</option>
       <option value="30min">30分</option>
     </select>
-    <div class="buttons"><button id="duration-start-button" class="primary">アンケートを開始</button></div>
+    <div class="buttons"><button id="duration-start-button" class="primary">認知負荷アンケートを開始</button></div>
   </div>
 
   <div id="question-screen" class="card hidden">
@@ -338,8 +338,8 @@
         await sendToSupabase(buildPayload());
         submitted = true;
         submitStatus.className = "small success";
-        finishTitle.textContent = "アンケート完了";
-        finishMessage.textContent = "回答の送信が完了しました。";
+        finishTitle.textContent = "認知負荷アンケート完了";
+        finishMessage.textContent = "認知負荷アンケートの送信が完了しました。";
         submitStatus.textContent = "ご協力ありがとうございました。";
       } catch (error) {
         console.error(error);

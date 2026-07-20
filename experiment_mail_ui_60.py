@@ -203,7 +203,7 @@ class ExperimentMail60UI:
         self.preview.delete("1.0", "end")
         self.preview.insert("1.0", text)
         self.status.set(
-            "本文を生成しました。NASA課題・記述タスクはURLで案内されます。"
+            "本文を生成しました。認知負荷アンケート・記述タスクはURLで案内されます。"
         )
 
     def copy(self) -> None:

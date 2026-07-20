@@ -24,6 +24,7 @@
     .hidden { display: none; }
     .error { color: #b91c1c; }
     .success { color: #166534; }
+    .keep-open-notice { margin-top: 12px; padding: 10px 12px; border: 2px solid #15803d; border-radius: 6px; background: #f0fdf4; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -32,7 +33,8 @@
   <div id="intro-screen" class="card">
     <h2>はじめに</h2>
     <p class="small">この課題は能力を判定するものではありません。何かで調べたりせず、自分の言葉で回答してください。</p>
-    <p class="small">このページはChrome・Edge・Safariなどのブラウザで開いてください。回答の送信にはインターネット接続が必要です。</p>
+    <p class="small">回答の送信にはインターネット接続が必要です。</p>
+    <p class="small keep-open-notice">重要：このページは3条件で共通して使用します。実験が終わるまで、このタブを閉じないでください。</p>
     <div id="browser-warning" class="small error hidden"></div>
     <label for="participant-id">実験参加者ID</label>
     <input type="text" id="participant-id" autocomplete="off" placeholder="実験参加者IDを入力してください．例: A001">
@@ -42,7 +44,7 @@
   <div id="condition-screen" class="card hidden">
     <div id="condition-progress" class="small"></div>
     <h2>実験条件の選択</h2>
-    <p class="small">このアンケートの直前に視聴した動画の条件を選択してください。</p>
+    <p class="small">この記述タスクの直前に視聴した動画の条件を選択してください。</p>
     <p id="condition-note" class="small"></p>
     <label for="video-condition">実験条件</label>
     <select id="video-condition">
@@ -51,7 +53,7 @@
       <option value="med">瞑想動画</option>
       <option value="control">日常動画</option>
     </select>
-    <div class="buttons"><button id="condition-start-button" class="primary">アンケートを開始</button></div>
+    <div class="buttons"><button id="condition-start-button" class="primary">記述タスクを開始</button></div>
   </div>
 
   <div id="question-screen" class="card hidden">
@@ -68,12 +70,12 @@
 
   <div id="finish-screen" class="card hidden">
     <h2 id="finish-title">回答の確認</h2>
-    <p id="finish-message">このアンケートの全ての質問に回答しました。必要であれば「戻る」で確認・修正してから、「送信」を押してください。</p>
+    <p id="finish-message">この条件の記述タスクに回答しました。必要であれば「戻る」で確認・修正してから、「送信」を押してください。</p>
     <div id="submit-status" class="small" aria-live="polite"></div>
     <div class="buttons center-buttons">
       <button id="finish-back-button">戻る</button>
       <button id="submit-button" class="primary">送信</button>
-      <button id="continue-button" class="primary hidden">次のアンケートへ</button>
+      <button id="continue-button" class="hidden">次の条件の回答を開始</button>
     </div>
   </div>
 
@@ -273,13 +275,15 @@
       submitButton.disabled = false;
       finishBackButton.disabled = false;
       continueButton.classList.add("hidden");
+      finishTitle.textContent = "回答の確認";
+      finishMessage.textContent = "この条件の記述タスクに回答しました。必要であれば「戻る」で確認・修正してから、「送信」を押してください。";
     }
 
     function showQuestion(index) {
       const question = questions[index];
       const state = states[index];
       const now = performance.now();
-      progressLabel.textContent = `アンケート ${questionnaireIndex + 1} / ${TOTAL_QUESTIONNAIRES} ・ 質問 ${index + 1} / ${questions.length}`;
+      progressLabel.textContent = `記述タスク ${questionnaireIndex + 1} / ${TOTAL_QUESTIONNAIRES} ・ 質問 ${index + 1} / ${questions.length}`;
       categoryLabel.textContent = question.category;
       questionText.textContent = question.prompt;
       answerText.value = state.answer;
@@ -313,7 +317,7 @@
     }
 
     function showConditionSelection() {
-      conditionProgress.textContent = `アンケート ${questionnaireIndex + 1} / ${TOTAL_QUESTIONNAIRES}`;
+      conditionProgress.textContent = `記述タスク ${questionnaireIndex + 1} / ${TOTAL_QUESTIONNAIRES}`;
       for (const option of videoConditionInput.options) {
         if (option.value) option.disabled = submittedConditions.has(option.value);
       }
@@ -464,11 +468,14 @@
         submittedConditions.add(videoCondition);
         submitStatus.className = "small success";
         if (questionnaireIndex < TOTAL_QUESTIONNAIRES - 1) {
-          submitStatus.textContent = `アンケート${questionnaireIndex + 1}を送信しました。「次のアンケートへ」を押してください。`;
+          finishTitle.textContent = "送信完了";
+          finishMessage.textContent = `条件${questionnaireIndex + 1}の記述タスクを送信しました。`;
+          submitStatus.className = "small success keep-open-notice";
+          submitStatus.textContent = "このタブは閉じず、実験案内メールに戻って次のタスクへ進んでください。「次の条件の回答を開始」は、次の条件の動画視聴後にこのタブへ戻ってから押してください。";
           continueButton.classList.remove("hidden");
         } else {
-          finishTitle.textContent = "全アンケート完了";
-          finishMessage.textContent = "3つ全てのアンケートの送信が完了しました。";
+          finishTitle.textContent = "全条件の記述タスク完了";
+          finishMessage.textContent = "3条件全ての記述タスクを送信しました。";
           submitStatus.textContent = "ご協力ありがとうございました。";
         }
       } catch (error) {
