@@ -25,6 +25,7 @@
     .error { color: #b91c1c; }
     .success { color: #166534; }
     .keep-open-notice { margin-top: 12px; padding: 10px 12px; border: 2px solid #15803d; border-radius: 6px; background: #f0fdf4; font-weight: 700; }
+    .selection-warning { margin: 10px 0 14px; padding: 10px 12px; border: 2px solid #d97706; border-radius: 6px; background: #fffbeb; color: #92400e; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -44,7 +45,7 @@
   <div id="condition-screen" class="card hidden">
     <div id="condition-progress" class="small"></div>
     <h2>実験条件の選択</h2>
-    <p class="small">この記述タスクの直前に視聴した動画の条件を選択してください。</p>
+    <p class="small selection-warning">重要：実験条件の選択間違いに注意してください。直前に視聴した動画と同じ条件を選び、開始前にもう一度確認してください。</p>
     <p id="condition-note" class="small"></p>
     <label for="video-condition">実験条件</label>
     <select id="video-condition">
@@ -347,6 +348,14 @@
       const selectedCondition = videoConditionInput.value;
       if (!selectedCondition) {
         alert("実験条件を選択してください。");
+        videoConditionInput.focus();
+        return;
+      }
+      const selectedLabel = videoConditionInput.options[videoConditionInput.selectedIndex].textContent;
+      const confirmed = window.confirm(
+        `選択した実験条件は「${selectedLabel}」です。\n直前に視聴した動画条件と一致していますか？`
+      );
+      if (!confirmed) {
         videoConditionInput.focus();
         return;
       }
