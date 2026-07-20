@@ -1,0 +1,8 @@
+﻿source_row,participant_id,submission_id,viewing_duration,created_at,included,reason
+2,test002,04eb78c2-b65c-4176-9c29-8e9037872b80,30min,2026-07-12T18:50:51.246901+00:00,False,invalid_participant_id
+3,test003,8565d5a1-e40c-4c95-9dbb-551236c26b2f,25min,2026-07-12T18:56:59.84837+00:00,False,invalid_participant_id
+4,test004,a4c1ddcd-8311-409d-b89d-cbbc06bc7c5c,15min,2026-07-12T18:57:20.605056+00:00,False,invalid_participant_id
+5,test006,f5b3358a-52a4-4375-9768-a32ebcd6b0da,20min,2026-07-12T18:59:55.765797+00:00,False,invalid_participant_id
+6,test007,0456cded-8742-4640-ab94-15b429c11728,10min,2026-07-12T19:02:20.227009+00:00,False,invalid_participant_id
+7,tets001,0938f9b0-7dd9-4575-8881-9113b2f322f7,5min,2026-07-12T18:49:02.675899+00:00,False,invalid_participant_id
+8,tets005,a42f488e-9640-4bf0-911f-d6cb7c89ed05,10min,2026-07-12T18:59:32.378056+00:00,False,invalid_participant_id

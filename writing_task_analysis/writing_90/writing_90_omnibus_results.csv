@@ -1,0 +1,21 @@
+﻿metric,label_en,n,test,statistic,p_raw,residual_shapiro_p,effect,effect_name,p_holm_across_metrics,significance_holm
+Total_task_sec,Total task time,26,one-way repeated-measures ANOVA,2.1362732740502235,0.12874937025789213,0.06871636026797161,0.0787239003851384,partial eta squared,1.0,NS
+Total_answer_sec,Total answer time,26,one-way repeated-measures ANOVA,1.8428259165901977,0.1689640632930018,0.6499708109325767,0.06865245568095123,partial eta squared,1.0,NS
+Latency_sec,Time to first input (sum),26,one-way repeated-measures ANOVA,0.10295809338765662,0.9023555416031466,0.05737961020071621,0.004101432707836002,partial eta squared,1.0,NS
+Writing_sec,Writing time (sum),26,one-way repeated-measures ANOVA,2.528230610199673,0.0899586172982567,0.3090090853950367,0.09184137716657027,partial eta squared,1.0,NS
+Total_chars,Total character count,26,Friedman test,4.796116504854369,0.09089427578651313,0.03614850494284068,0.09223300970873785,Kendall's W,1.0,NS
+general_Latency,General: time to first input,26,Friedman test,0.5384615384615472,0.7639669352423368,2.891367130452431e-05,0.010355029585798984,Kendall's W,1.0,NS
+general_Writing,General: writing time,26,Friedman test,5.846153846153868,0.05376799253902047,1.15208725896525e-05,0.112426035502959,Kendall's W,1.0,NS
+general_Chars,General: character count,26,one-way repeated-measures ANOVA,2.3061490640137854,0.11015109002058228,0.258955647429394,0.08445530193977488,partial eta squared,1.0,NS
+content_Latency,Content: time to first input,26,Friedman test,2.153846153846189,0.3406420441574351,5.540697820677843e-11,0.041420118343195936,Kendall's W,1.0,NS
+content_Writing,Content: writing time,26,Friedman test,2.846153846153868,0.24097142449614672,0.0012724704724835242,0.054733727810651306,Kendall's W,1.0,NS
+content_Chars,Content: character count,26,Friedman test,5.352941176470589,0.06880556929696165,2.2817301286998352e-07,0.10294117647058824,Kendall's W,1.0,NS
+inquiry_Latency,Inquiry: time to first input,26,Friedman test,0.3076923076923208,0.8574039191604357,2.5732592272456857e-06,0.005917159763313862,Kendall's W,1.0,NS
+inquiry_Writing,Inquiry: writing time,26,Friedman test,1.0,0.6065306597126334,0.0002069773066699226,0.019230769230769232,Kendall's W,1.0,NS
+inquiry_Chars,Inquiry: character count,26,Friedman test,4.0,0.1353352832366127,0.0005592186525835869,0.07692307692307693,Kendall's W,1.0,NS
+emotion_Latency,Emotion: time to first input,26,Friedman test,0.3076923076923208,0.8574039191604357,2.391009532476604e-05,0.005917159763313862,Kendall's W,1.0,NS
+emotion_Writing,Emotion: writing time,26,Friedman test,2.7692307692307736,0.25042009669367865,0.0005703981036314728,0.05325443786982257,Kendall's W,1.0,NS
+emotion_Chars,Emotion: character count,26,Friedman test,1.0,0.6065306597126334,0.004228861567307281,0.019230769230769232,Kendall's W,1.0,NS
+summary_Latency,Summary: time to first input,26,Friedman test,2.846153846153868,0.24097142449614672,2.109766315641622e-11,0.054733727810651306,Kendall's W,1.0,NS
+summary_Writing,Summary: writing time,26,one-way repeated-measures ANOVA,0.12348658763796329,0.8841022023817717,0.16952438174517995,0.004915185127956125,partial eta squared,1.0,NS
+summary_Chars,Summary: character count,26,one-way repeated-measures ANOVA,0.5766565496068922,0.5654652545142385,0.25615079660246687,0.022546205305937664,partial eta squared,1.0,NS
