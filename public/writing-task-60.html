@@ -169,6 +169,7 @@
     let currentIndex = 0;
     let questionVisitStartedMs = null;
     let visitWritingStartedMs = null;
+    let visitStartedWithAnswer = false;
     let visitFirstInputRecorded = false;
     let surveyStartedAt = null;
     let surveyStartPerfMs = null;
@@ -258,6 +259,7 @@
       currentIndex = 0;
       questionVisitStartedMs = null;
       visitWritingStartedMs = null;
+      visitStartedWithAnswer = false;
       surveyStartedAt = null;
       surveyStartPerfMs = null;
       submitted = false;
@@ -279,6 +281,7 @@
       if (state.firstShownMs === null) state.firstShownMs = now - surveyStartPerfMs;
       questionVisitStartedMs = now;
       visitWritingStartedMs = null;
+      visitStartedWithAnswer = state.answer.length > 0;
       visitFirstInputRecorded = false;
       updateNextButton();
       answerText.focus();
@@ -301,6 +304,7 @@
       state.visits += 1;
       questionVisitStartedMs = null;
       visitWritingStartedMs = null;
+      visitStartedWithAnswer = false;
     }
 
     function updateNextButton() {
@@ -478,11 +482,16 @@
 
     answerText.addEventListener("input", () => {
       const state = states[currentIndex];
-      // 初回回答時だけでなく、戻って修正した訪問でも、表示から最初の入力までを加算する。
+      // 初回回答は入力前をlatency、既存回答の修正は再訪時間全体をwritingに加算する。
       if (state && !visitFirstInputRecorded && questionVisitStartedMs !== null) {
         const now = performance.now();
-        state.cumulativeLatencyMs += now - questionVisitStartedMs;
-        visitWritingStartedMs = now;
+        if (visitStartedWithAnswer) {
+          // 既存回答の修正訪問は、再表示時点から記述時間とする。
+          visitWritingStartedMs = questionVisitStartedMs;
+        } else {
+          state.cumulativeLatencyMs += now - questionVisitStartedMs;
+          visitWritingStartedMs = now;
+        }
         visitFirstInputRecorded = true;
       }
       updateNextButton();
