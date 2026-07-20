@@ -74,6 +74,6 @@ A027,71,short,short,False,matched_by_within_participant_time_order
 A028,76,control,control,False,matched_by_within_participant_time_order
 A028,75,med,med,False,matched_by_within_participant_time_order
 A028,74,short,short,False,matched_by_within_participant_time_order
-A029,78,control,control,False,matched_by_within_participant_time_order
-A029,79,control,med,True,matched_by_within_participant_time_order
+A029,79,control,control,False,matched_by_within_participant_time_order
+A029,78,med,med,False,matched_by_within_participant_time_order
 A029,77,short,short,False,matched_by_within_participant_time_order

@@ -1,0 +1,20 @@
+﻿source_column_index,source_column,analysis_role,used_as_score
+1,タイムスタンプ,timestamp_metadata,False
+2,Q1. 参加者ID,participant_id_key_only,False
+3,実験のショート動画視聴時間を選択してください,grouping_variable_only,False
+4,Q2. ショート動画後に見た2分間の映像で1度でも見たことのある内容が含まれていましたか？,prior_exposure_question_ignored,False
+5,"ショート動画視聴後に見た2分間の映画予告映像に関する質問です。
+Q3. 映像の表面的な描写だけでなく、背後にある意図やテーマまで読み取ろうとした。",score_item,True
+6,"ショート動画視聴後に見た2分間の映画予告映像に関する質問です。
+Q4. 映像をただ受動的に眺めるのではなく、疑問や仮説を持ちながら視聴した。",score_item,True
+7,"ショート動画視聴後に見た2分間の映画予告映像に関する質問です。
+Q5. 登場人物の細かい表情や背景の演出など、細部の情報まで注意を払って視聴した。",score_item,True
+8,"ショート動画視聴後の記述タスクに関する質問です。
+Q6. どこかで聞いたような言葉ではなく、自分自身の言葉で考えを表現しようと努めた。",score_item,True
+9,"ショート動画視聴後の記述タスクに関する質問です。
+Q7. この質問の回答は4を回答してください．",dummy_attention_check_ignored,False
+10,"ショート動画視聴後の記述タスクに関する質問です。
+Q8. 「一般的にどうか」という正解を探すのではなく、「自分自身はどのように考えるか」を軸にして回答を考えた。",score_item,True
+11,"ショート動画視聴後の記述タスクに関する質問です。
+Q9. すぐに思いついたことをそのまま書くのではなく、自分自身で深く考えまとめてから回答した。",score_item,True
+12,Q.10 実験のコメントがあれば記入してください,free_text_comment_ignored,False

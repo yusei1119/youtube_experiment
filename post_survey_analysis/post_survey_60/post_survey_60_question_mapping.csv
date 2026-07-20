@@ -1,0 +1,15 @@
+﻿source_column_index,source_column,question_number,question_text,condition,domain,position,included_in_score,exclusion_reason,expected_attention_value,nonempty_response_count,numeric_response_count,attention_correct_count,attention_incorrect_count,attention_missing_count
+5,"ショート動画視聴後に見た2分間の映画予告映像に関する質問です。
+Q3. 映像の表面的な描写だけでなく、背後にある意図やテーマまで読み取ろうとした。",3,映像の表面的な描写だけでなく、背後にある意図やテーマまで読み取ろうとした。,duration_group,Reading,1.0,True,,,0,0,,,
+6,"ショート動画視聴後に見た2分間の映画予告映像に関する質問です。
+Q4. 映像をただ受動的に眺めるのではなく、疑問や仮説を持ちながら視聴した。",4,映像をただ受動的に眺めるのではなく、疑問や仮説を持ちながら視聴した。,duration_group,Reading,2.0,True,,,0,0,,,
+7,"ショート動画視聴後に見た2分間の映画予告映像に関する質問です。
+Q5. 登場人物の細かい表情や背景の演出など、細部の情報まで注意を払って視聴した。",5,登場人物の細かい表情や背景の演出など、細部の情報まで注意を払って視聴した。,duration_group,Reading,3.0,True,,,0,0,,,
+8,"ショート動画視聴後の記述タスクに関する質問です。
+Q6. どこかで聞いたような言葉ではなく、自分自身の言葉で考えを表現しようと努めた。",6,どこかで聞いたような言葉ではなく、自分自身の言葉で考えを表現しようと努めた。,duration_group,Output,1.0,True,,,0,0,,,
+9,"ショート動画視聴後の記述タスクに関する質問です。
+Q7. この質問の回答は4を回答してください．",7,この質問の回答は4を回答してください．,duration_group,Output,,False,dummy_attention_check_ignored,4.0,0,0,0.0,0.0,0.0
+10,"ショート動画視聴後の記述タスクに関する質問です。
+Q8. 「一般的にどうか」という正解を探すのではなく、「自分自身はどのように考えるか」を軸にして回答を考えた。",8,「一般的にどうか」という正解を探すのではなく、「自分自身はどのように考えるか」を軸にして回答を考えた。,duration_group,Output,2.0,True,,,0,0,,,
+11,"ショート動画視聴後の記述タスクに関する質問です。
+Q9. すぐに思いついたことをそのまま書くのではなく、自分自身で深く考えまとめてから回答した。",9,すぐに思いついたことをそのまま書くのではなく、自分自身で深く考えまとめてから回答した。,duration_group,Output,3.0,True,,,0,0,,,
