@@ -1,6 +1,7 @@
 """YouTube視聴実験ログの分析スクリプト。
 
-data/logs.jsonl（1行1イベントのJSONL）を読み込み、統計分析に使えるCSVを出力する。
+data/logs.jsonl（1行1イベントのJSONL）を読み込み、参加者IDの補正・除外を
+適用してから、統計分析に使えるCSVを出力する。元のJSONLは変更しない。
 
   - youtube_analysis_summary_YYYYMMDD_HHMMSS.csv
       … 参加者 = 1行（統計分析の解析単位）
@@ -27,6 +28,10 @@ data/logs.jsonl（1行1イベントのJSONL）を読み込み、統計分析に�
   python -m scripts.analysis.analyze_youtube_logs [入力JSONLパス]
   （省略時は data/logs.jsonl）
 
+参加者ID補正:
+  data/corrections/youtube_participant_corrections.csv
+  （適用件数は youtube_log_correction_report.csv に出力）
+
 既存の分析結果を保護するため、出力ファイル名には実行日時を付ける。
 """
 
@@ -34,6 +39,7 @@ import argparse
 import json
 import os
 import re
+import unicodedata
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -57,7 +63,15 @@ LOG_PATH = "data/logs.jsonl"
 SESSION_PATH = "data/sessions.json"
 CATEGORY_LABEL_CSV = "youtube_video_category_labels.csv"
 VIDEO_CATEGORY_CACHE_CSV = "data/reference/youtube_video_category_cache.csv"
+CORRECTIONS_CSV = "data/corrections/youtube_participant_corrections.csv"
+SESSION_CORRECTIONS_CSV = "data/corrections/youtube_session_corrections.csv"
 OUTPUT_CSV = "analysis_runs/individual/youtube/youtube_analysis_summary.csv"
+CORRECTION_REPORT_CSV = (
+    "analysis_runs/individual/youtube/youtube_log_correction_report.csv"
+)
+SESSION_CORRECTION_REPORT_CSV = (
+    "analysis_runs/individual/youtube/youtube_session_correction_report.csv"
+)
 
 # 1セッションのまとまり（解析単位）を表すキー
 GROUP_KEYS = ["participant_id", "session_id"]
@@ -72,6 +86,270 @@ def load_logs(path):
     if not rows:
         raise SystemExit(f"ログが空です: {path}")
     return pd.DataFrame(rows)
+
+
+def normalize_participant_id(value):
+    """全半角とA系再実験IDの大文字・小文字を正規化する。"""
+    if pd.isna(value):
+        return pd.NA
+    normalized = unicodedata.normalize("NFKC", str(value)).strip()
+    if re.fullmatch(r"[Aa]\d+(?:-[Vv]\d+)?", normalized):
+        normalized = normalized.upper()
+    return normalized
+
+
+def load_participant_corrections(path):
+    """参加者IDの除外・訂正ルールをCSVから読み込む。"""
+    columns = [
+        "source_participant_id",
+        "corrected_participant_id",
+        "action",
+        "reason",
+    ]
+    if path is None:
+        return pd.DataFrame(columns=columns)
+    if not Path(path).exists():
+        raise FileNotFoundError(f"参加者ID補正CSVがありません: {path}")
+
+    corrections = pd.read_csv(path, dtype=str, keep_default_na=False)
+    missing = sorted(set(columns) - set(corrections.columns))
+    if missing:
+        raise ValueError(f"{path}: 補正CSVの必須列がありません: {missing}")
+
+    corrections = corrections[columns].copy()
+    for column in columns:
+        corrections[column] = corrections[column].str.strip()
+    corrections["source_participant_id"] = corrections[
+        "source_participant_id"
+    ].map(normalize_participant_id)
+    rename_target = corrections["corrected_participant_id"].ne("")
+    corrections.loc[rename_target, "corrected_participant_id"] = corrections.loc[
+        rename_target, "corrected_participant_id"
+    ].map(normalize_participant_id)
+
+    blank_source = corrections["source_participant_id"].eq("")
+    if blank_source.any():
+        rows = (corrections.index[blank_source] + 2).tolist()
+        raise ValueError(f"{path}: source_participant_id が空です（行: {rows}）")
+
+    duplicated = corrections["source_participant_id"].duplicated(keep=False)
+    if duplicated.any():
+        ids = sorted(corrections.loc[duplicated, "source_participant_id"].unique())
+        raise ValueError(f"{path}: source_participant_id が重複しています: {ids}")
+
+    valid_actions = {"exclude", "rename"}
+    invalid_actions = ~corrections["action"].isin(valid_actions)
+    if invalid_actions.any():
+        actions = sorted(corrections.loc[invalid_actions, "action"].unique())
+        raise ValueError(f"{path}: 未対応のactionです: {actions}")
+
+    invalid_rename = corrections["action"].eq("rename") & corrections[
+        "corrected_participant_id"
+    ].eq("")
+    if invalid_rename.any():
+        ids = corrections.loc[invalid_rename, "source_participant_id"].tolist()
+        raise ValueError(f"{path}: rename先が空です: {ids}")
+
+    return corrections
+
+
+def load_session_corrections(path):
+    """採用セッションの除外・末尾トリムルールをCSVから読み込む。"""
+    columns = ["session_id", "action", "cutoff_server_time", "reason"]
+    if path is None:
+        return pd.DataFrame(columns=columns)
+    if not Path(path).exists():
+        raise FileNotFoundError(f"セッション補正CSVがありません: {path}")
+
+    corrections = pd.read_csv(path, dtype=str, keep_default_na=False)
+    missing = sorted(set(columns) - set(corrections.columns))
+    if missing:
+        raise ValueError(f"{path}: セッション補正CSVの必須列がありません: {missing}")
+
+    corrections = corrections[columns].copy()
+    for column in columns:
+        corrections[column] = corrections[column].str.strip()
+
+    blank_session = corrections["session_id"].eq("")
+    if blank_session.any():
+        rows = (corrections.index[blank_session] + 2).tolist()
+        raise ValueError(f"{path}: session_id が空です（行: {rows}）")
+
+    duplicated = corrections["session_id"].duplicated(keep=False)
+    if duplicated.any():
+        ids = sorted(corrections.loc[duplicated, "session_id"].unique())
+        raise ValueError(f"{path}: session_id が重複しています: {ids}")
+
+    valid_actions = {"exclude", "trim_after"}
+    invalid_actions = ~corrections["action"].isin(valid_actions)
+    if invalid_actions.any():
+        actions = sorted(corrections.loc[invalid_actions, "action"].unique())
+        raise ValueError(f"{path}: 未対応のsession actionです: {actions}")
+
+    trim_missing_cutoff = corrections["action"].eq("trim_after") & corrections[
+        "cutoff_server_time"
+    ].eq("")
+    if trim_missing_cutoff.any():
+        ids = corrections.loc[trim_missing_cutoff, "session_id"].tolist()
+        raise ValueError(f"{path}: trim_afterの時刻が空です: {ids}")
+
+    trim_rows = corrections["action"].eq("trim_after")
+    parsed_cutoffs = pd.to_datetime(
+        corrections.loc[trim_rows, "cutoff_server_time"],
+        errors="coerce",
+        utc=True,
+        format="mixed",
+    )
+    if parsed_cutoffs.isna().any():
+        ids = corrections.loc[parsed_cutoffs.index[parsed_cutoffs.isna()], "session_id"]
+        raise ValueError(f"{path}: cutoff_server_timeが不正です: {ids.tolist()}")
+    return corrections
+
+
+def apply_session_corrections(df, corrections):
+    """失敗セッションの除外と、遅延して記録された末尾イベントの除去を行う。"""
+    report_columns = [
+        "session_id",
+        "action",
+        "cutoff_server_time",
+        "reason",
+        "matched_event_count",
+        "retained_event_count",
+        "removed_event_count",
+        "status",
+    ]
+    if corrections.empty:
+        return df.copy(), pd.DataFrame(columns=report_columns)
+    required = {"session_id", "server_time"}
+    missing = sorted(required - set(df.columns))
+    if missing:
+        raise ValueError(f"ログにセッション補正の必須列がありません: {missing}")
+
+    source = df.copy()
+    session_ids = source["session_id"].astype("string").str.strip()
+    server_times = pd.to_datetime(
+        source["server_time"], errors="coerce", utc=True, format="mixed"
+    )
+    remove = pd.Series(False, index=source.index)
+    report_rows = []
+
+    for rule in corrections.itertuples(index=False):
+        matched = session_ids.eq(rule.session_id).fillna(False)
+        if rule.action == "exclude":
+            rule_remove = matched
+        else:
+            cutoff = pd.to_datetime(rule.cutoff_server_time, utc=True)
+            rule_remove = matched & server_times.gt(cutoff)
+
+        matched_count = int(matched.sum())
+        removed_count = int(rule_remove.sum())
+        retained_count = matched_count - removed_count
+        remove |= rule_remove
+        report_rows.append(
+            {
+                "session_id": rule.session_id,
+                "action": rule.action,
+                "cutoff_server_time": rule.cutoff_server_time,
+                "reason": rule.reason,
+                "matched_event_count": matched_count,
+                "retained_event_count": retained_count,
+                "removed_event_count": removed_count,
+                "status": "applied" if matched_count else "not_found",
+            }
+        )
+
+    return (
+        source.loc[~remove].copy(),
+        pd.DataFrame(report_rows, columns=report_columns),
+    )
+
+
+def apply_participant_corrections(df, corrections):
+    """元ログを保持したまま、分析用DataFrameへ参加者ID補正を適用する。"""
+    report_columns = [
+        "source_participant_id",
+        "corrected_participant_id",
+        "action",
+        "reason",
+        "matched_event_count",
+        "matched_session_count",
+        "status",
+    ]
+    if corrections.empty:
+        return df.copy(), pd.DataFrame(columns=report_columns)
+    if "participant_id" not in df.columns:
+        raise ValueError("ログに participant_id 列がありません。")
+
+    corrections = corrections.copy()
+    corrections["source_participant_id"] = corrections[
+        "source_participant_id"
+    ].map(normalize_participant_id)
+    rename_target = corrections["corrected_participant_id"].ne("")
+    corrections.loc[rename_target, "corrected_participant_id"] = corrections.loc[
+        rename_target, "corrected_participant_id"
+    ].map(normalize_participant_id)
+
+    corrected = df.copy()
+    original_ids = corrected["participant_id"].astype("string").str.strip()
+    original_ids = original_ids.map(normalize_participant_id).astype("string")
+    corrected["participant_id"] = original_ids
+
+    exclude_sources = set(
+        corrections.loc[
+            corrections["action"].eq("exclude"), "source_participant_id"
+        ]
+    )
+    rename_rules = corrections[corrections["action"].eq("rename")]
+    present_ids = set(original_ids.dropna().astype(str))
+    unsafe_targets = sorted(
+        {
+            rule.corrected_participant_id
+            for rule in rename_rules.itertuples(index=False)
+            if (
+                rule.source_participant_id in present_ids
+                and rule.corrected_participant_id in present_ids
+                and rule.corrected_participant_id not in exclude_sources
+            )
+        }
+    )
+    if unsafe_targets:
+        raise ValueError(
+            "補正後IDの既存ログと訂正元ログが意図せず統合される可能性が"
+            "あります。既存IDを除外するか補正ルールを確認してください: "
+            f"{unsafe_targets}"
+        )
+
+    report_rows = []
+    for rule in corrections.itertuples(index=False):
+        matched = original_ids.eq(rule.source_participant_id).fillna(False)
+        matched_events = int(matched.sum())
+        matched_sessions = (
+            int(corrected.loc[matched, "session_id"].nunique(dropna=True))
+            if "session_id" in corrected.columns
+            else 0
+        )
+        report_rows.append(
+            {
+                "source_participant_id": rule.source_participant_id,
+                "corrected_participant_id": rule.corrected_participant_id,
+                "action": rule.action,
+                "reason": rule.reason,
+                "matched_event_count": matched_events,
+                "matched_session_count": matched_sessions,
+                "status": "applied" if matched_events else "not_found",
+            }
+        )
+
+    excluded = original_ids.isin(exclude_sources)
+    corrected = corrected.loc[~excluded].copy()
+    rename_map = dict(
+        zip(
+            rename_rules["source_participant_id"],
+            rename_rules["corrected_participant_id"],
+        )
+    )
+    corrected["participant_id"] = corrected["participant_id"].replace(rename_map)
+    return corrected, pd.DataFrame(report_rows, columns=report_columns)
 
 
 def load_env_file(path=".env.local"):
@@ -605,7 +883,25 @@ def parse_args():
     parser.add_argument(
         "--category-labels", type=Path, default=Path(CATEGORY_LABEL_CSV)
     )
+    parser.add_argument(
+        "--corrections", type=Path, default=Path(CORRECTIONS_CSV)
+    )
+    parser.add_argument(
+        "--session-corrections",
+        type=Path,
+        default=Path(SESSION_CORRECTIONS_CSV),
+    )
     parser.add_argument("--output", type=Path, default=Path(OUTPUT_CSV))
+    parser.add_argument(
+        "--correction-report",
+        type=Path,
+        default=Path(CORRECTION_REPORT_CSV),
+    )
+    parser.add_argument(
+        "--session-correction-report",
+        type=Path,
+        default=Path(SESSION_CORRECTION_REPORT_CSV),
+    )
     parser.add_argument("--run-id", default=None, help=argparse.SUPPRESS)
     return parser.parse_args()
 
@@ -617,15 +913,38 @@ def main():
     VIDEO_CATEGORY_CACHE_CSV = str(args.category_cache)
     CATEGORY_LABEL_CSV = str(args.category_labels)
     load_env_file()
-    df = load_logs(args.input)
+    raw_df = load_logs(args.input)
+    session_corrections = load_session_corrections(args.session_corrections)
+    session_df, session_correction_report = apply_session_corrections(
+        raw_df, session_corrections
+    )
+    corrections = load_participant_corrections(args.corrections)
+    df, correction_report = apply_participant_corrections(session_df, corrections)
     video = build_video_table(df)
 
     summary = build_summary_table(video)
     output_csv = versioned_file(args.output, args.run_id)
+    correction_report_csv = versioned_file(args.correction_report, args.run_id)
+    session_correction_report_csv = versioned_file(
+        args.session_correction_report, args.run_id
+    )
     output_csv.parent.mkdir(parents=True, exist_ok=True)
+    correction_report_csv.parent.mkdir(parents=True, exist_ok=True)
+    session_correction_report_csv.parent.mkdir(parents=True, exist_ok=True)
     summary.to_csv(output_csv, index=False, encoding="utf-8-sig")
+    correction_report.to_csv(
+        correction_report_csv, index=False, encoding="utf-8-sig"
+    )
+    session_correction_report.to_csv(
+        session_correction_report_csv, index=False, encoding="utf-8-sig"
+    )
 
-    print(f"入力: {args.input}（{len(df)} イベント）")
+    print(f"入力: {args.input}（補正前 {len(raw_df)} / 補正後 {len(df)} イベント）")
+    print(f"補正: {args.corrections} → {correction_report_csv}")
+    print(
+        f"セッション補正: {args.session_corrections} → "
+        f"{session_correction_report_csv}"
+    )
     print(f"出力: {output_csv}（{len(summary)} 行）")
     print()
     cols = [

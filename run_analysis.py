@@ -27,6 +27,12 @@ DEFAULT_POST_SURVEY_60 = ROOT / (
     "フォームの回答 1.csv"
 )
 LOCAL_EXPORTS = ROOT / "data/local_exports"
+DEFAULT_YOUTUBE_CORRECTIONS = (
+    ROOT / "data/corrections/youtube_participant_corrections.csv"
+)
+DEFAULT_YOUTUBE_SESSION_CORRECTIONS = (
+    ROOT / "data/corrections/youtube_session_corrections.csv"
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -51,6 +57,18 @@ def parse_args() -> argparse.Namespace:
         "--category-cache",
         type=Path,
         default=ROOT / "data/reference/youtube_video_category_cache.csv",
+    )
+    parser.add_argument(
+        "--youtube-corrections",
+        type=Path,
+        default=DEFAULT_YOUTUBE_CORRECTIONS,
+        help="YouTube参加者IDの除外・訂正ルールCSV",
+    )
+    parser.add_argument(
+        "--youtube-session-corrections",
+        type=Path,
+        default=DEFAULT_YOUTUBE_SESSION_CORRECTIONS,
+        help="YouTubeセッションの除外・末尾トリムルールCSV",
     )
     parser.add_argument(
         "--nasa-90", type=Path, default=LOCAL_EXPORTS / "nasa_task_90_results.csv"
@@ -238,6 +256,14 @@ def main() -> None:
                     args.category_cache,
                     raw_dir / "youtube_video_category_cache.csv",
                 ),
+                "youtube_corrections": (
+                    args.youtube_corrections,
+                    raw_dir / "youtube_participant_corrections.csv",
+                ),
+                "youtube_session_corrections": (
+                    args.youtube_session_corrections,
+                    raw_dir / "youtube_session_corrections.csv",
+                ),
                 "post_survey_90": (args.post_survey_90, raw_dir / "post_survey_90.csv"),
                 "post_survey_60": (args.post_survey_60, raw_dir / "post_survey_60.csv"),
             }
@@ -254,6 +280,10 @@ def main() -> None:
 
             sessions = raw_dir / "sessions.json"
             category_cache = raw_dir / "youtube_video_category_cache.csv"
+            youtube_corrections = raw_dir / "youtube_participant_corrections.csv"
+            youtube_session_corrections = (
+                raw_dir / "youtube_session_corrections.csv"
+            )
             post_survey_90 = raw_dir / "post_survey_90.csv"
             post_survey_60 = raw_dir / "post_survey_60.csv"
             youtube_summary_base = analysis_dir / "youtube/youtube_analysis_summary.csv"
@@ -269,6 +299,14 @@ def main() -> None:
                     sessions,
                     "--category-cache",
                     category_cache,
+                    "--corrections",
+                    youtube_corrections,
+                    "--session-corrections",
+                    youtube_session_corrections,
+                    "--correction-report",
+                    analysis_dir / "youtube/youtube_log_correction_report.csv",
+                    "--session-correction-report",
+                    analysis_dir / "youtube/youtube_session_correction_report.csv",
                     "--output",
                     youtube_summary_base,
                     "--run-id",
