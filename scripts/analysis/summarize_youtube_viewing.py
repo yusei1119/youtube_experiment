@@ -33,6 +33,11 @@ import pandas as pd
 from scipy import stats
 
 from scripts.common.output_versioning import create_run_output_dir
+from scripts.common.participant_selection import (
+    canonicalize_participant_id,
+    filter_selected_participants,
+    load_participant_selection,
+)
 
 
 METRICS = {
@@ -117,6 +122,12 @@ def parse_args() -> argparse.Namespace:
         default=["A014"],
         help="解析から除外する参加者ID（既定: A014）",
     )
+    parser.add_argument(
+        "--participant-selection",
+        type=Path,
+        default=Path("data/corrections/analysis_participants.csv"),
+        help="A系分析で共通利用する採用者CSV",
+    )
     parser.add_argument("--dpi", type=int, default=220)
     return parser.parse_args()
 
@@ -132,6 +143,7 @@ def load_and_filter(
     id_pattern: str,
     min_session_minutes: float,
     exclude_ids: set[str],
+    included_ids: set[str],
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     if not input_path.exists():
         raise FileNotFoundError(
@@ -146,7 +158,7 @@ def load_and_filter(
     )
     df = df.copy()
     df.insert(0, "source_row", np.arange(2, len(df) + 2))
-    df["participant_id"] = df["participant_id"].astype("string").str.strip()
+    df["participant_id"] = df["participant_id"].map(canonicalize_participant_id)
     df["session_minutes"] = pd.to_numeric(df["session_minutes"], errors="coerce")
 
     valid_id = df["participant_id"].str.fullmatch(id_pattern, na=False)
@@ -157,6 +169,7 @@ def load_and_filter(
     explicitly_excluded = valid_id & df["participant_id"].isin(exclude_ids)
     report.loc[explicitly_excluded, "reason"] = "excluded_by_request"
     candidates = df.loc[valid_id & ~explicitly_excluded].copy()
+    candidates = filter_selected_participants(candidates, report, included_ids)
     for metric in METRICS:
         candidates[metric] = pd.to_numeric(candidates[metric], errors="coerce")
 
@@ -591,6 +604,7 @@ def save_csv(df: pd.DataFrame, output: Path) -> None:
 
 def main() -> None:
     args = parse_args()
+    _, included_ids = load_participant_selection(args.participant_selection)
     if args.exact_output_dir:
         args.output_dir.mkdir(parents=True, exist_ok=False)
     else:
@@ -601,6 +615,7 @@ def main() -> None:
         args.id_pattern,
         args.min_session_minutes,
         set(args.exclude_ids),
+        included_ids,
     )
     descriptive = descriptive_statistics(data)
     means = overall_means(data)

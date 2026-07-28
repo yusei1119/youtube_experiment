@@ -33,6 +33,9 @@ DEFAULT_YOUTUBE_CORRECTIONS = (
 DEFAULT_YOUTUBE_SESSION_CORRECTIONS = (
     ROOT / "data/corrections/youtube_session_corrections.csv"
 )
+DEFAULT_PARTICIPANT_SELECTION = (
+    ROOT / "data/corrections/analysis_participants.csv"
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -69,6 +72,12 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=DEFAULT_YOUTUBE_SESSION_CORRECTIONS,
         help="YouTubeセッションの除外・末尾トリムルールCSV",
+    )
+    parser.add_argument(
+        "--participant-selection",
+        type=Path,
+        default=DEFAULT_PARTICIPANT_SELECTION,
+        help="YouTube・NASA・記述課題・事後アンケートで共通利用するA系採用者CSV",
     )
     parser.add_argument(
         "--nasa-90", type=Path, default=LOCAL_EXPORTS / "nasa_task_90_results.csv"
@@ -264,6 +273,10 @@ def main() -> None:
                     args.youtube_session_corrections,
                     raw_dir / "youtube_session_corrections.csv",
                 ),
+                "participant_selection": (
+                    args.participant_selection,
+                    raw_dir / "analysis_participants.csv",
+                ),
                 "post_survey_90": (args.post_survey_90, raw_dir / "post_survey_90.csv"),
                 "post_survey_60": (args.post_survey_60, raw_dir / "post_survey_60.csv"),
             }
@@ -284,6 +297,7 @@ def main() -> None:
             youtube_session_corrections = (
                 raw_dir / "youtube_session_corrections.csv"
             )
+            participant_selection = raw_dir / "analysis_participants.csv"
             post_survey_90 = raw_dir / "post_survey_90.csv"
             post_survey_60 = raw_dir / "post_survey_60.csv"
             youtube_summary_base = analysis_dir / "youtube/youtube_analysis_summary.csv"
@@ -318,6 +332,8 @@ def main() -> None:
                     youtube_summary,
                     "--output-dir",
                     analysis_dir / "youtube/a_participants",
+                    "--participant-selection",
+                    participant_selection,
                     "--exact-output-dir",
                     "--run-id",
                     run_id,
@@ -342,6 +358,8 @@ def main() -> None:
                     nasa_90,
                     "--input-60",
                     nasa_60,
+                    "--participant-selection",
+                    participant_selection,
                     "--output-dir",
                     analysis_dir / "nasa_tlx",
                     "--exact-output-dir",
@@ -358,6 +376,8 @@ def main() -> None:
                     writing_60,
                     "--nasa-90-input",
                     nasa_90,
+                    "--participant-selection",
+                    participant_selection,
                     "--output-dir",
                     analysis_dir / "writing",
                     "--exact-output-dir",
@@ -372,6 +392,8 @@ def main() -> None:
                     post_survey_90,
                     "--input-60",
                     post_survey_60,
+                    "--participant-selection",
+                    participant_selection,
                     "--output-dir",
                     analysis_dir / "post_survey",
                     "--exact-output-dir",

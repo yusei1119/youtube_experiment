@@ -12,6 +12,19 @@
 Supabase由来データを補正する場合は、Supabase側を修正するか、補正用CSVと
 適用スクリプトをこのフォルダに保存してください。
 
+## A系分析の有効採用者
+
+YouTube・NASA-TLX・記述課題・実験後アンケートのA系分析は、すべて
+`analysis_participants.csv`の同じ採用者リストを使用します。
+
+- `included`を`true`にすると採用、`false`にすると除外
+- `participant_id`と`note`も残し、採否の根拠を追跡
+- `true/false`の代わりに`採用/除外`も使用可能
+- 全角・小文字・ゼロ埋めのID表記は分析時に標準化
+
+変更後はリポジトリ直下で`python run_analysis.py`を実行すると、全分析に反映
+されます。各実行ではこのCSVも`raw/analysis_participants.csv`へ保存されます。
+
 ## 2026-07-29 YouTube 10分視聴ログの採用・除外補正
 
 - 対象: Supabase由来のYouTube視聴ログ

@@ -39,6 +39,11 @@ import pandas as pd
 from scipy import stats
 
 from scripts.common.output_versioning import create_run_output_dir
+from scripts.common.participant_selection import (
+    canonicalize_participant_id,
+    filter_selected_participants,
+    load_participant_selection,
+)
 
 from scripts.analysis.analyze_nasa_tlx import (
     holm_adjust,
@@ -121,6 +126,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--duplicate-policy", choices=("latest", "first", "error"), default="latest")
     parser.add_argument("--dpi", type=int, default=220)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--participant-selection",
+        type=Path,
+        default=Path("data/corrections/analysis_participants.csv"),
+        help="90版で共通利用するA系採用者CSV",
+    )
     return parser.parse_args()
 
 
@@ -211,7 +222,7 @@ def load_source(path: Path, id_pattern: str) -> tuple[pd.DataFrame, pd.DataFrame
     ensure_columns(df, {"participant_id", "total_duration_sec"}, path)
     df = df.copy()
     df.insert(0, "source_row", np.arange(2, len(df) + 2))
-    df["participant_id"] = df["participant_id"].astype("string").str.strip()
+    df["participant_id"] = df["participant_id"].map(canonicalize_participant_id)
     valid_id = df["participant_id"].str.fullmatch(id_pattern, na=False)
     report_columns = ["source_row", "participant_id"]
     for column in ("submission_id", "video_condition", "viewing_duration", "created_at"):
@@ -690,6 +701,8 @@ def analyze_90(args: argparse.Namespace) -> None:
     output = args.output_dir / "writing_90"
     output.mkdir(parents=True, exist_ok=True)
     data, report = load_source(args.input_90, r"A\d+")
+    _, included_ids = load_participant_selection(args.participant_selection)
+    data = filter_selected_participants(data, report, included_ids)
     ensure_columns(data, {"video_condition", "started_at"}, args.input_90)
     data["video_condition"] = data["video_condition"].astype("string").str.strip().str.lower()
     data, repairs = repair_90_conditions(data, args.nasa_90_input)

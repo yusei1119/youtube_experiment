@@ -24,10 +24,10 @@
 この1コマンドで、次の処理を順番に実行します。
 
 1. YouTube視聴ログ、NASA-TLX、記述課題をSupabaseから取得
-2. セッション情報・カテゴリキャッシュ・補正定義・実験後アンケートをスナップショット保存
+2. セッション情報・カテゴリキャッシュ・補正定義・採用者一覧・実験後アンケートをスナップショット保存
 3. YouTube参加者IDの補正・除外ルールを適用して視聴指標を集計
 4. A系・B系YouTube記述統計を作成
-5. NASA-TLX、記述課題、実験後アンケートを分析
+5. 共通のA系採用者一覧を使ってNASA-TLX、記述課題、実験後アンケートを分析
 6. 入力元・SHA-256・実行状態を`manifest.json`へ記録
 
 出力例：
@@ -114,6 +114,9 @@ python -m scripts.analysis.analyze_post_survey --study all
 
 分析結果を直接修正せず、可能な限り入力データまたはSupabase側を修正します。
 補正内容は [`data/corrections/README.md`](data/corrections/README.md) に記録します。
+A系の全分析で共通利用する有効採用者は
+[`data/corrections/analysis_participants.csv`](data/corrections/analysis_participants.csv)
+の`included`列で編集します。`true`は採用、`false`は除外です。
 YouTubeログの補正は
 [`data/corrections/youtube_participant_corrections.csv`](data/corrections/youtube_participant_corrections.csv)
 と

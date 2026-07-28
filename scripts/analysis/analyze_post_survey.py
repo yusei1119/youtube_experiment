@@ -41,6 +41,11 @@ import pandas as pd
 from scipy import stats
 
 from scripts.common.output_versioning import create_run_output_dir
+from scripts.common.participant_selection import (
+    canonicalize_participant_id,
+    filter_selected_participants,
+    load_participant_selection,
+)
 
 from scripts.analysis.analyze_nasa_tlx import (
     holm_adjust,
@@ -114,6 +119,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--dpi", type=int, default=220)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--participant-selection",
+        type=Path,
+        default=Path("data/corrections/analysis_participants.csv"),
+        help="90版で共通利用するA系採用者CSV",
+    )
     return parser.parse_args()
 
 
@@ -328,7 +339,7 @@ def read_form(path: Path) -> pd.DataFrame:
 
 
 def normalize_participant_id(series: pd.Series) -> pd.Series:
-    return series.astype("string").str.strip().str.upper()
+    return series.map(canonicalize_participant_id).astype("string")
 
 
 def normalize_duration(value: object) -> str | None:
@@ -926,6 +937,9 @@ def analyze_90(args: argparse.Namespace) -> None:
     report = make_filter_report(raw, id_column, r"A\d+")
     valid_ids = report.loc[report["included"], "source_row"]
     candidates = raw[raw["source_row"].isin(valid_ids)].copy()
+    candidates["participant_id"] = normalize_participant_id(candidates[id_column])
+    _, included_ids = load_participant_selection(args.participant_selection)
+    candidates = filter_selected_participants(candidates, report, included_ids)
     scores, items, invalid_scores = score_rows(candidates, mapping, id_column, "90")
     invalid_source_rows = set(candidates.loc[invalid_scores, "source_row"].astype(int))
     mark_report(report, invalid_source_rows, "missing_or_out_of_range_score")

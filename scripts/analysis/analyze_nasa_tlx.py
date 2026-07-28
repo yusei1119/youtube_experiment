@@ -37,6 +37,11 @@ import pandas as pd
 from scipy import stats
 
 from scripts.common.output_versioning import create_run_output_dir
+from scripts.common.participant_selection import (
+    canonicalize_participant_id,
+    filter_selected_participants,
+    load_participant_selection,
+)
 
 
 METRIC_SOURCE = {
@@ -104,6 +109,12 @@ def parse_args() -> argparse.Namespace:
         default="latest",
         help="同一参加者・同一条件の重複回答の扱い（既定: latest）",
     )
+    parser.add_argument(
+        "--participant-selection",
+        type=Path,
+        default=Path("data/corrections/analysis_participants.csv"),
+        help="90版で共通利用するA系採用者CSV",
+    )
     return parser.parse_args()
 
 
@@ -160,7 +171,7 @@ def load_base(path: Path, id_pattern: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     ensure_columns(df, {"participant_id", *METRIC_SOURCE.values()}, path)
     df = df.copy()
     df.insert(0, "source_row", np.arange(2, len(df) + 2))
-    df["participant_id"] = df["participant_id"].astype("string").str.strip()
+    df["participant_id"] = df["participant_id"].map(canonicalize_participant_id)
     valid_id = df["participant_id"].str.fullmatch(id_pattern, na=False)
 
     report = df[["source_row", "participant_id"]].copy()
@@ -565,10 +576,18 @@ def make_pairwise_pvalue_table(pairwise: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def analyze_90(path: Path, root: Path, duplicate_policy: str, dpi: int, seed: int) -> None:
+def analyze_90(
+    path: Path,
+    root: Path,
+    duplicate_policy: str,
+    dpi: int,
+    seed: int,
+    included_ids: set[str],
+) -> None:
     output = root / "nasa_90"
     output.mkdir(parents=True, exist_ok=True)
     df, report = load_base(path, r"A\d+")
+    df = filter_selected_participants(df, report, included_ids)
     ensure_columns(df, {"video_condition"}, path)
     df["video_condition"] = df["video_condition"].astype("string").str.strip().str.lower()
     valid_condition = df["video_condition"].isin(CONDITION_ORDER_90)
@@ -675,7 +694,15 @@ def main() -> None:
         args.output_dir = create_run_output_dir(args.output_dir, args.run_id)
     print(f"出力ディレクトリ: {args.output_dir}")
     if args.study in ("90", "all"):
-        analyze_90(args.input_90, args.output_dir, args.duplicate_policy, args.dpi, args.seed)
+        _, included_ids = load_participant_selection(args.participant_selection)
+        analyze_90(
+            args.input_90,
+            args.output_dir,
+            args.duplicate_policy,
+            args.dpi,
+            args.seed,
+            included_ids,
+        )
     if args.study in ("60", "all"):
         analyze_60(args.input_60, args.output_dir, args.duplicate_policy, args.dpi, args.seed)
 
