@@ -33,6 +33,7 @@ import pandas as pd
 from scipy import stats
 
 from scripts.common.output_versioning import create_run_output_dir
+from scripts.common.plotting import configure_analysis_plot_style
 from scripts.common.participant_selection import (
     canonicalize_participant_id,
     filter_selected_participants,
@@ -487,15 +488,7 @@ def top_category_counts(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def configure_plot_style() -> None:
-    plt.rcParams.update(
-        {
-            "font.family": "DejaVu Sans",
-            "axes.linewidth": 1.2,
-            "axes.titlesize": 12,
-            "xtick.direction": "in",
-            "ytick.direction": "in",
-        }
-    )
+    configure_analysis_plot_style()
 
 
 def plot_metric_distributions(data: pd.DataFrame, output: Path, dpi: int) -> None:
@@ -512,9 +505,13 @@ def plot_metric_distributions(data: pd.DataFrame, output: Path, dpi: int) -> Non
         ax.set_title(METRICS[metric][0])
         ax.set_xlabel(PLOT_UNITS.get(METRICS[metric][1], METRICS[metric][1]))
         ax.set_ylabel("Participants")
-        ax.legend(fontsize=8)
+        ax.legend(fontsize=12)
         ax.grid(axis="y", linestyle="--", alpha=0.25)
-    fig.suptitle(f"YouTube Shorts Viewing Metrics (A participants, n={len(data)})", fontsize=18)
+    fig.suptitle(
+        f"YouTube Shorts Viewing Metrics (A participants, n={len(data)})",
+        fontsize=22,
+        fontweight="bold",
+    )
     fig.tight_layout(rect=(0, 0, 1, 0.96))
     fig.savefig(output, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
@@ -527,7 +524,12 @@ def plot_category_share(category: pd.DataFrame, output: Path, dpi: int) -> None:
     fig, ax = plt.subplots(figsize=(10, fig_height))
     percentages = plotted["overall_view_time_share"] * 100
     bars = ax.barh(plotted["category"], percentages, color="#59a14f", alpha=0.85)
-    ax.bar_label(bars, labels=[f"{value:.1f}%" for value in percentages], padding=3, fontsize=9)
+    ax.bar_label(
+        bars,
+        labels=[f"{value:.1f}%" for value in percentages],
+        padding=3,
+        fontsize=13,
+    )
     ax.set_xlabel("Share of total viewing time (%)")
     ax.set_title("YouTube Category Share by Total Viewing Time")
     ax.set_xlim(0, max(percentages.max() * 1.18, 1) if len(percentages) else 1)

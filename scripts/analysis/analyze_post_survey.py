@@ -41,6 +41,10 @@ import pandas as pd
 from scipy import stats
 
 from scripts.common.output_versioning import create_run_output_dir
+from scripts.common.plotting import (
+    add_significance_bars,
+    configure_analysis_plot_style,
+)
 from scripts.common.participant_selection import (
     canonicalize_participant_id,
     filter_selected_participants,
@@ -695,16 +699,7 @@ def pairwise_pvalue_table(
 
 
 def configure_plot_style() -> None:
-    plt.rcParams.update({
-        "font.family": "DejaVu Sans",
-        "axes.linewidth": 1.2,
-        "axes.titlesize": 13,
-        "axes.labelsize": 10,
-        "xtick.labelsize": 9,
-        "ytick.labelsize": 9,
-        "xtick.direction": "in",
-        "ytick.direction": "in",
-    })
+    configure_analysis_plot_style()
 
 
 def ci95(values: np.ndarray) -> float:
@@ -725,6 +720,7 @@ def plot_metric_panels(
     seed: int,
     title: str,
     paired: bool,
+    pairwise: pd.DataFrame,
 ) -> None:
     if data.empty:
         return
@@ -774,13 +770,14 @@ def plot_metric_panels(
         )
         ax.set_title(METRIC_LABELS[metric])
         ax.set_xticks(x_positions, [labels.get(group, group) for group in present])
-        ax.set_ylim(0.8, 7.2)
+        ax.set_ylim(0.8, 8.6)
         ax.set_yticks(range(1, 8))
         ax.set_ylabel("Score (1–7)")
         ax.grid(axis="y", linestyle="--", color="0.88", linewidth=0.7)
+        add_significance_bars(ax, pairwise, metric, present)
     for ax in axes.flat[len(metrics):]:
         ax.axis("off")
-    fig.suptitle(title, fontsize=16)
+    fig.suptitle(title, fontsize=22, fontweight="bold")
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     fig.savefig(output, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
@@ -975,11 +972,13 @@ def analyze_90(args: argparse.Namespace) -> None:
         scores, ("Reading", "Output"), "condition", CONDITIONS_90,
         CONDITION_LABELS_90, output / "post_survey_90_composite_scores.png",
         args.dpi, args.seed, "Post-survey 90: Composite Scores", paired=True,
+        pairwise=pairwise,
     )
     plot_metric_panels(
         scores, METRICS[2:], "condition", CONDITIONS_90,
         CONDITION_LABELS_90, output / "post_survey_90_question_scores.png",
         args.dpi, args.seed, "Post-survey 90: Question Scores", paired=True,
+        pairwise=pairwise,
     )
     report_path = output / "post_survey_90_report.md"
     write_report_90(scores, mapping, descriptives, pvalue_table, report_path)
@@ -1062,12 +1061,14 @@ def analyze_60(args: argparse.Namespace) -> None:
     plot_metric_panels(
         scores, ("Reading", "Output"), "viewing_duration", DURATIONS_60,
         duration_labels, output / "post_survey_60_composite_scores.png",
-        args.dpi, args.seed, "Post-survey 60: Composite Scores by Viewing Duration", paired=False,
+        args.dpi, args.seed, "Post-survey 60: Composite Scores by Viewing Duration",
+        paired=False, pairwise=pairwise,
     )
     plot_metric_panels(
         scores, METRICS[2:], "viewing_duration", DURATIONS_60,
         duration_labels, output / "post_survey_60_question_scores.png",
-        args.dpi, args.seed, "Post-survey 60: Question Scores by Viewing Duration", paired=False,
+        args.dpi, args.seed, "Post-survey 60: Question Scores by Viewing Duration",
+        paired=False, pairwise=pairwise,
     )
     report_path = output / "post_survey_60_report.md"
     write_report_60(scores, mapping, descriptives, pairwise, report_path)

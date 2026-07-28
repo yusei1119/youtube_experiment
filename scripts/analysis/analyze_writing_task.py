@@ -39,6 +39,10 @@ import pandas as pd
 from scipy import stats
 
 from scripts.common.output_versioning import create_run_output_dir
+from scripts.common.plotting import (
+    add_significance_bars,
+    configure_analysis_plot_style,
+)
 from scripts.common.participant_selection import (
     canonicalize_participant_id,
     filter_selected_participants,
@@ -553,10 +557,7 @@ def pairwise_wide_table(pairwise: pd.DataFrame, conditions: tuple[str, ...]) -> 
 
 
 def configure_plot_style() -> None:
-    plt.rcParams.update({
-        "font.family": "DejaVu Sans", "axes.linewidth": 1.2,
-        "xtick.direction": "in", "ytick.direction": "in",
-    })
+    configure_analysis_plot_style()
 
 
 def plot_metric_panels(
@@ -568,6 +569,7 @@ def plot_metric_panels(
     dpi: int,
     seed: int,
     title: str,
+    pairwise: pd.DataFrame,
 ) -> None:
     configure_plot_style()
     present = tuple(group for group in group_order if group in set(data[group_column]))
@@ -593,9 +595,12 @@ def plot_metric_panels(
         ax.set_xticks(x_positions, [CONDITION_LABELS.get(value, value) for value in present])
         ax.set_title(METRIC_LABELS[metric])
         ax.grid(axis="y", linestyle="--", alpha=0.25)
+        lower, upper = ax.get_ylim()
+        ax.set_ylim(lower, upper + 0.28 * (upper - lower))
+        add_significance_bars(ax, pairwise, metric, present)
     for ax in axes.flat[len(metrics):]:
         ax.axis("off")
-    fig.suptitle(title, fontsize=18)
+    fig.suptitle(title, fontsize=22, fontweight="bold")
     fig.tight_layout(rect=(0, 0, 1, 0.96))
     fig.subplots_adjust(hspace=0.38)
     fig.savefig(output, dpi=dpi, bbox_inches="tight")
@@ -756,7 +761,7 @@ def analyze_90(args: argparse.Namespace) -> None:
     plot_metric_panels(
         data, OVERALL_METRICS, "video_condition", CONDITIONS_90,
         output / "writing_90_overall_metrics.png", args.dpi, args.seed,
-        "Writing Task 90: Overall Metrics",
+        "Writing Task 90: Overall Metrics", pairwise,
     )
     for measure in MEASURES:
         metrics = tuple(f"{category}_{measure}" for category in CATEGORIES)
@@ -764,6 +769,7 @@ def analyze_90(args: argparse.Namespace) -> None:
             data, metrics, "video_condition", CONDITIONS_90,
             output / f"writing_90_questions_{measure.lower()}.png",
             args.dpi, args.seed, f"Writing Task 90: Question-level {measure}",
+            pairwise,
         )
     report_path = output / "writing_90_report.md"
     write_report_90(data, descriptives, pairwise_table, report_path)
@@ -815,7 +821,7 @@ def analyze_60(args: argparse.Namespace) -> None:
     plot_metric_panels(
         data, OVERALL_METRICS, "viewing_duration", DURATIONS_60,
         output / "writing_60_overall_metrics.png", args.dpi, args.seed,
-        "Writing Task 60: Overall Metrics by Viewing Duration",
+        "Writing Task 60: Overall Metrics by Viewing Duration", pairwise,
     )
     for measure in MEASURES:
         metrics = tuple(f"{category}_{measure}" for category in CATEGORIES)
@@ -823,6 +829,7 @@ def analyze_60(args: argparse.Namespace) -> None:
             data, metrics, "viewing_duration", DURATIONS_60,
             output / f"writing_60_questions_{measure.lower()}.png",
             args.dpi, args.seed, f"Writing Task 60: Question-level {measure}",
+            pairwise,
         )
     report_path = output / "writing_60_report.md"
     write_report_60(data, descriptives, pairwise, report_path)

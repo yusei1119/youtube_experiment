@@ -37,6 +37,10 @@ import pandas as pd
 from scipy import stats
 
 from scripts.common.output_versioning import create_run_output_dir
+from scripts.common.plotting import (
+    add_significance_bars,
+    configure_analysis_plot_style,
+)
 from scripts.common.participant_selection import (
     canonicalize_participant_id,
     filter_selected_participants,
@@ -453,22 +457,14 @@ def analyze_independent(long_df: pd.DataFrame, condition_order: tuple[str, ...])
 
 
 def configure_plot_style() -> None:
-    plt.rcParams.update({
-        "font.family": "DejaVu Serif",
-        "axes.linewidth": 1.3,
-        "axes.titlesize": 15,
-        "xtick.labelsize": 11,
-        "ytick.labelsize": 11,
-        "xtick.direction": "in",
-        "ytick.direction": "in",
-    })
+    configure_analysis_plot_style()
 
 
 def plot_scatter_mean(
     long_df: pd.DataFrame,
     condition_order: tuple[str, ...],
     labels: dict[str, str],
-    omnibus: pd.DataFrame,
+    pairwise: pd.DataFrame,
     output: Path,
     dpi: int,
     seed: int,
@@ -476,7 +472,6 @@ def plot_scatter_mean(
     configure_plot_style()
     fig, axes = plt.subplots(2, 4, figsize=(18, 8.2), sharey=True)
     rng = np.random.default_rng(seed)
-    p_map = dict(zip(omnibus["metric"], omnibus["p_holm_across_metrics"]))
     x_positions = np.arange(len(condition_order))
     for ax, metric in zip(axes.flat, METRICS):
         means, sems = [], []
@@ -491,12 +486,13 @@ def plot_scatter_mean(
         ax.errorbar(x_positions, means, yerr=sems, fmt="o", color="black", ecolor="black", capsize=5, markersize=6, zorder=4)
         ax.set_title(LABELS[metric])
         ax.set_xticks(x_positions, [labels.get(value, value) for value in condition_order])
-        ax.set_ylim(-4, 110)
+        ax.set_ylim(-4, 136)
         ax.set_yticks([0, 25, 50, 75, 100])
         ax.grid(axis="y", linestyle="--", alpha=0.28)
-        p_value = p_map.get(metric, np.nan)
-        ax.text(0.98, 0.96, f"Holm p={p_value:.3g} {p_stars(p_value)}" if np.isfinite(p_value) else "", transform=ax.transAxes, ha="right", va="top", fontsize=9)
-    fig.suptitle("NASA-TLX Scatter + Mean ± SEM", fontsize=20)
+        add_significance_bars(ax, pairwise, metric, condition_order)
+    fig.suptitle(
+        "NASA-TLX Scatter + Mean ± SEM", fontsize=22, fontweight="bold"
+    )
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     fig.savefig(output, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
@@ -507,6 +503,7 @@ def plot_pairlines(
     wide: pd.DataFrame,
     condition_order: tuple[str, ...],
     labels: dict[str, str],
+    pairwise: pd.DataFrame,
     output: Path,
     dpi: int,
 ) -> None:
@@ -523,10 +520,15 @@ def plot_pairlines(
         ax.errorbar(x_positions, means, yerr=sems, fmt="none", color="black", capsize=5, zorder=5)
         ax.set_title(LABELS[metric])
         ax.set_xticks(x_positions, [labels.get(value, value) for value in condition_order])
-        ax.set_ylim(-4, 110)
+        ax.set_ylim(-4, 136)
         ax.set_yticks([0, 25, 50, 75, 100])
         ax.grid(axis="y", linestyle="--", alpha=0.28)
-    fig.suptitle("NASA-TLX Paired Participant Lines + Mean ± SEM", fontsize=20)
+        add_significance_bars(ax, pairwise, metric, condition_order)
+    fig.suptitle(
+        "NASA-TLX Paired Participant Lines + Mean ± SEM",
+        fontsize=22,
+        fontweight="bold",
+    )
     fig.tight_layout(rect=(0, 0, 1, 0.95))
     fig.savefig(output, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
@@ -631,8 +633,14 @@ def analyze_90(
     save_csv(omnibus, output / "nasa_90_omnibus_results.csv")
     save_csv(pairwise, output / "nasa_90_pairwise_results.csv")
     save_csv(pairwise_table, output / "nasa_90_pairwise_pvalue_table.csv")
-    plot_pairlines(wide, CONDITION_ORDER_90, CONDITION_LABELS_90, output / "nasa_90_pairlines.png", dpi)
-    plot_scatter_mean(long_df, CONDITION_ORDER_90, CONDITION_LABELS_90, omnibus, output / "nasa_90_scatter_mean_sem.png", dpi, seed)
+    plot_pairlines(
+        wide, CONDITION_ORDER_90, CONDITION_LABELS_90, pairwise,
+        output / "nasa_90_pairlines.png", dpi,
+    )
+    plot_scatter_mean(
+        long_df, CONDITION_ORDER_90, CONDITION_LABELS_90, pairwise,
+        output / "nasa_90_scatter_mean_sem.png", dpi, seed,
+    )
     print(f"90版: A系完全ケース {len(wide)}名（入力 {len(report)}行）")
     print(omnibus[["metric", "test", "p_raw", "p_holm_across_metrics", "significance_holm"]].to_string(index=False))
     display_columns = [
@@ -682,7 +690,10 @@ def analyze_60(path: Path, root: Path, duplicate_policy: str, dpi: int, seed: in
     save_csv(description, output / "nasa_60_descriptive_stats.csv")
     save_csv(omnibus, output / "nasa_60_omnibus_results.csv")
     save_csv(pairwise, output / "nasa_60_pairwise_results.csv")
-    plot_scatter_mean(long_df, present_order, {value: value for value in present_order}, omnibus, output / "nasa_60_scatter_mean_sem.png", dpi, seed)
+    plot_scatter_mean(
+        long_df, present_order, {value: value for value in present_order}, pairwise,
+        output / "nasa_60_scatter_mean_sem.png", dpi, seed,
+    )
     print(f"60版: B系有効回答 {len(df)}件（入力 {len(report)}行）")
 
 

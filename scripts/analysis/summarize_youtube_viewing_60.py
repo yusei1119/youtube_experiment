@@ -348,7 +348,8 @@ def plot_metrics_by_duration(
         ax.grid(axis="y", linestyle="--", alpha=0.25)
     fig.suptitle(
         f"YouTube Shorts Metrics by Viewing Duration (B participants, n={len(data)})",
-        fontsize=18,
+        fontsize=22,
+        fontweight="bold",
     )
     fig.tight_layout(rect=(0, 0, 1, 0.96))
     fig.savefig(output, dpi=dpi, bbox_inches="tight")
@@ -389,7 +390,7 @@ def plot_category_heatmap(category_data: pd.DataFrame, output: Path, dpi: int) -
                 f"{value:.1f}",
                 ha="center",
                 va="center",
-                fontsize=8,
+                fontsize=12,
                 color="white" if value > threshold else "black",
             )
     fig.colorbar(image, ax=ax, label="Share of group viewing time (%)")
