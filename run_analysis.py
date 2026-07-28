@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import os
@@ -151,6 +152,129 @@ def module_command(module: str, *args: object) -> list[str]:
     return [sys.executable, "-m", module, *(str(value) for value in args)]
 
 
+def participant_ids_from_file(path: Path) -> set[str]:
+    """Supabase exportのCSV/JSONLから空でない参加者IDを抽出する。"""
+    participant_ids: set[str] = set()
+    if path.suffix.lower() == ".jsonl":
+        with path.open("r", encoding="utf-8") as source:
+            for line_number, line in enumerate(source, start=1):
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError as error:
+                    raise ValueError(
+                        f"{path}:{line_number}: JSONLを読み取れません"
+                    ) from error
+                participant_id = str(row.get("participant_id") or "").strip()
+                if participant_id:
+                    participant_ids.add(participant_id)
+        return participant_ids
+
+    if path.suffix.lower() == ".csv":
+        with path.open("r", encoding="utf-8-sig", newline="") as source:
+            reader = csv.DictReader(source)
+            if reader.fieldnames is None:
+                return participant_ids
+            if "participant_id" not in reader.fieldnames:
+                raise ValueError(f"{path}: participant_id列がありません")
+            for row in reader:
+                participant_id = str(row.get("participant_id") or "").strip()
+                if participant_id:
+                    participant_ids.add(participant_id)
+        return participant_ids
+
+    raise ValueError(f"参加者ID抽出に未対応の形式です: {path}")
+
+
+def supabase_export_files(raw_dir: Path) -> list[Path]:
+    """一括分析run内のSupabase由来5ファイルを返す。"""
+    patterns = (
+        "youtube_logs*.jsonl",
+        "nasa_90*.csv",
+        "nasa_60*.csv",
+        "writing_90*.csv",
+        "writing_60*.csv",
+    )
+    files: list[Path] = []
+    for pattern in patterns:
+        matches = sorted(raw_dir.glob(pattern))
+        if len(matches) != 1:
+            raise ValueError(
+                f"{raw_dir}: {pattern} が1ファイルではありません（{len(matches)}件）"
+            )
+        files.append(matches[0])
+    return files
+
+
+def participant_ids_from_exports(paths: list[Path]) -> set[str]:
+    participant_ids: set[str] = set()
+    for path in paths:
+        participant_ids.update(participant_ids_from_file(path))
+    return participant_ids
+
+
+def new_participant_ids(
+    current_paths: list[Path], previous_raw_dir: Path
+) -> tuple[set[str], set[str], list[str]]:
+    """現在・前回の参加者集合と、今回初出の参加者IDを返す。"""
+    current = participant_ids_from_exports(current_paths)
+    previous = participant_ids_from_exports(
+        supabase_export_files(previous_raw_dir)
+    )
+    return current, previous, sorted(current - previous)
+
+
+def latest_completed_supabase_run(
+    output_root: Path, current_run: Path
+) -> tuple[Path, dict[str, object]] | None:
+    """現在のrunを除き、直近の正常完了Supabase runを返す。"""
+    candidates: list[tuple[str, Path, dict[str, object]]] = []
+    if not output_root.is_dir():
+        return None
+    for path in output_root.glob("run_*"):
+        if path == current_run or not path.is_dir():
+            continue
+        manifest_path = path / "manifest.json"
+        if not manifest_path.is_file():
+            continue
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if (
+            manifest.get("status") != "complete"
+            or manifest.get("mode") != "supabase_export"
+        ):
+            continue
+        completed_at = str(manifest.get("completed_at") or "")
+        candidates.append((completed_at, path, manifest))
+    if not candidates:
+        return None
+    _, path, manifest = max(candidates, key=lambda item: (item[0], item[1].name))
+    return path, manifest
+
+
+def replace_run_directory(current_run: Path, previous_run: Path) -> Path:
+    """前回runを今回runで安全に置き換え、前回のパスを維持する。"""
+    backup = previous_run.with_name(f".{previous_run.name}.overwrite_backup")
+    number = 2
+    while backup.exists():
+        backup = previous_run.with_name(
+            f".{previous_run.name}.overwrite_backup_{number}"
+        )
+        number += 1
+
+    previous_run.rename(backup)
+    try:
+        current_run.rename(previous_run)
+    except Exception:
+        backup.rename(previous_run)
+        raise
+    shutil.rmtree(backup)
+    return previous_run
+
+
 def main() -> None:
     args = parse_args()
     run_id = args.run_id or make_run_id()
@@ -172,6 +296,7 @@ def main() -> None:
         "status": "running",
         "inputs": {},
     }
+    overwrite_target: Path | None = None
 
     if args.dry_run:
         raw_dir = planned_root / "raw"
@@ -258,6 +383,75 @@ def main() -> None:
                             }.items()
                         }
                     )
+
+                    current_participant_ids = participant_ids_from_exports(
+                        [youtube_logs, nasa_90, nasa_60, writing_90, writing_60]
+                    )
+                    if not current_participant_ids:
+                        raise ValueError(
+                            "Supabase exportに参加者IDが1件もありません。"
+                            "前回runの上書きを中止します。"
+                        )
+                    previous = latest_completed_supabase_run(
+                        args.output_root, run_root
+                    )
+                    if previous is not None:
+                        previous_run, _previous_manifest = previous
+                        try:
+                            previous_participant_ids = (
+                                participant_ids_from_exports(
+                                    supabase_export_files(previous_run / "raw")
+                                )
+                            )
+                            new_participant_ids_list = sorted(
+                                current_participant_ids
+                                - previous_participant_ids
+                            )
+                        except (OSError, ValueError) as error:
+                            manifest["participant_comparison"] = {
+                                "previous_run": display_path(previous_run),
+                                "current_participant_count": len(
+                                    current_participant_ids
+                                ),
+                                "action": "keep_new_run",
+                                "reason": f"previous_run_unreadable: {error}",
+                            }
+                            print(
+                                "\n前回runの参加者IDを比較できないため、"
+                                f"新規runとして保存します: {error}"
+                            )
+                        else:
+                            overwrite_target = (
+                                previous_run
+                                if not new_participant_ids_list
+                                else None
+                            )
+                            manifest["participant_comparison"] = {
+                                "previous_run": display_path(previous_run),
+                                "previous_participant_count": len(
+                                    previous_participant_ids
+                                ),
+                                "current_participant_count": len(
+                                    current_participant_ids
+                                ),
+                                "new_participant_ids": new_participant_ids_list,
+                                "action": (
+                                    "overwrite_previous_run"
+                                    if overwrite_target is not None
+                                    else "keep_new_run"
+                                ),
+                            }
+                            if overwrite_target is not None:
+                                print(
+                                    "\n新しい参加者IDはありません。分析成功後に"
+                                    f"前回runを上書きします: {overwrite_target}"
+                                )
+                            else:
+                                print(
+                                    "\n新しい参加者IDを検出しました。"
+                                    "新規runとして保存します: "
+                                    f"{new_participant_ids_list}"
+                                )
 
             snapshots = {
                 "sessions": (args.sessions, raw_dir / "sessions.json"),
@@ -407,11 +601,18 @@ def main() -> None:
         if not args.dry_run:
             manifest["status"] = "complete"
             manifest["completed_at"] = datetime.now().astimezone().isoformat()
+            if overwrite_target is not None:
+                manifest["stored_as"] = display_path(overwrite_target)
             (run_root / "manifest.json").write_text(
                 json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
                 encoding="utf-8",
             )
-            print(f"\n完了: {run_root}")
+            final_root = (
+                replace_run_directory(run_root, overwrite_target)
+                if overwrite_target is not None
+                else run_root
+            )
+            print(f"\n完了: {final_root}")
     except Exception as error:
         if not args.dry_run:
             manifest["status"] = "failed"
