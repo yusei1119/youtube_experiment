@@ -17,6 +17,9 @@
 __pycache__/
 *.py[cod]
 
+# generated analysis runs
+/analysis_runs/
+
 # next.js
 /.next/
 /out/
