@@ -446,12 +446,16 @@ def paired_analysis(
             })
         adjusted = holm_adjust([float(row["p_raw"]) for row in current_rows])
         for row, p_holm in zip(current_rows, adjusted):
+            # Holm補正のファミリーは「この指標における3条件の全ペア比較」だけ。
+            # 別の指標のp値は混ぜない。
+            row["holm_family"] = metric
+            row["holm_family_size"] = len(current_rows)
             row["p_holm_within_metric"] = p_holm
             row["significance_holm"] = p_stars(p_holm)
         pairwise_rows.extend(current_rows)
     omnibus = pd.DataFrame(omnibus_rows)
-    omnibus["p_holm_across_metrics"] = holm_adjust(omnibus["p_raw"].tolist())
-    omnibus["significance_holm"] = omnibus["p_holm_across_metrics"].map(p_stars)
+    # オムニバス検定は指標ごとに1回なので、指標横断のHolm補正は行わない。
+    omnibus["significance_unadjusted"] = omnibus["p_raw"].map(p_stars)
     return omnibus, pd.DataFrame(pairwise_rows), wide
 
 
@@ -521,12 +525,14 @@ def independent_analysis(
             })
         adjusted = holm_adjust([float(row["p_raw"]) for row in current_rows])
         for row, p_holm in zip(current_rows, adjusted):
+            # 60版も補正単位は各指標内の時間条件ペアだけ。
+            row["holm_family"] = metric
+            row["holm_family_size"] = len(current_rows)
             row["p_holm_within_metric"] = p_holm
             row["significance_holm"] = p_stars(p_holm)
         pairwise_rows.extend(current_rows)
     omnibus = pd.DataFrame(omnibus_rows)
-    omnibus["p_holm_across_metrics"] = holm_adjust(omnibus["p_raw"].tolist())
-    omnibus["significance_holm"] = omnibus["p_holm_across_metrics"].map(p_stars)
+    omnibus["significance_unadjusted"] = omnibus["p_raw"].map(p_stars)
     return omnibus, pd.DataFrame(pairwise_rows)
 
 
