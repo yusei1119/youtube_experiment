@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+import sys
 import tkinter as tk
+from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
-from scripts.experiment import generate_experiment_mail_60 as mail
+if __package__:
+    from . import generate_experiment_mail_60 as mail
+else:
+    # Allow this file to be launched directly from any working directory.
+    project_root = Path(__file__).resolve().parents[2]
+    sys.path.insert(0, str(project_root))
+    from scripts.experiment import generate_experiment_mail_60 as mail
 
 
 class ExperimentMail60UI:
