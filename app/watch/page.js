@@ -44,6 +44,9 @@ export default function WatchPage() {
   const experimentTimerRef = useRef(null);
   const finishingRef = useRef(false);
   const viewingStartRequestRef = useRef(false);
+  const sessionRef = useRef(null);
+  const indexRef = useRef(0);
+  const currentVideoRef = useRef(null);
 
   const currentVideo = useMemo(() => {
     if (!session || !session.video_order || session.video_order.length === 0) {
@@ -51,6 +54,10 @@ export default function WatchPage() {
     }
     return session.video_order[index] || null;
   }, [session, index]);
+
+  sessionRef.current = session;
+  indexRef.current = index;
+  currentVideoRef.current = currentVideo;
 
   useEffect(() => {
     mountedRef.current = true;
@@ -312,9 +319,10 @@ export default function WatchPage() {
 
   async function handlePlayerStateChange(event) {
     const YT = window.YT;
+    const activeSession = sessionRef.current;
 
     if (event.data === YT.PlayerState.PLAYING) {
-      if (!session?.started_at || !session?.expires_at) {
+      if (!activeSession?.started_at || !activeSession?.expires_at) {
         if (!audioUnlockedRef.current) {
           safeCall(() => playerRef.current?.pauseVideo());
           return;
@@ -603,17 +611,23 @@ export default function WatchPage() {
     viewingStartRequestRef.current = true;
 
     try {
+      const pendingSession = sessionRef.current;
+      if (!pendingSession) {
+        throw new Error("視聴セッションが見つかりません。");
+      }
+
       const response = await fetch("/api/session", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: session.session_id }),
+        body: JSON.stringify({ session_id: pendingSession.session_id }),
       });
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || "動画視聴の開始に失敗しました。");
       }
 
-      const activeSession = { ...session, ...data };
+      const activeSession = { ...pendingSession, ...data };
+      sessionRef.current = activeSession;
       localStorage.setItem(
         "youtube_experiment_session",
         JSON.stringify(activeSession)
@@ -675,7 +689,10 @@ export default function WatchPage() {
   }
 
   async function sendLog(eventType, extra = {}) {
-    if (!session || !currentVideo) return;
+    const activeSession = sessionRef.current;
+    const activeVideo = currentVideoRef.current;
+    const activeIndex = indexRef.current;
+    if (!activeSession || !activeVideo) return;
 
     const player = playerRef.current;
 
@@ -683,11 +700,11 @@ export default function WatchPage() {
     const duration = extra.duration_sec ?? safeCall(() => player?.getDuration());
 
     const payload = {
-      session_id: session.session_id,
-      participant_id: session.participant_id,
-      video_id: currentVideo.video_id,
-      video_title: currentVideo.title,
-      video_index: index,
+      session_id: activeSession.session_id,
+      participant_id: activeSession.participant_id,
+      video_id: activeVideo.video_id,
+      video_title: activeVideo.title,
+      video_index: activeIndex,
       event_type: eventType,
 
       current_time_sec: currentTime,
@@ -722,18 +739,25 @@ export default function WatchPage() {
   }
 
   function updateVideoIndex(nextIndex) {
+    const activeSession = sessionRef.current;
+    if (!activeSession) return;
+
     const updatedSession = {
-      ...session,
+      ...activeSession,
       current_index: nextIndex,
     };
 
+    sessionRef.current = updatedSession;
+    indexRef.current = nextIndex;
+    currentVideoRef.current = updatedSession.video_order[nextIndex] || null;
     localStorage.setItem("youtube_experiment_session", JSON.stringify(updatedSession));
     setSession(updatedSession);
     setIndex(nextIndex);
   }
 
   async function finishExperiment(reason = "completed") {
-    if (!session || finishingRef.current || experimentEnded) return;
+    const activeSession = sessionRef.current;
+    if (!activeSession || finishingRef.current || experimentEnded) return;
 
     finishingRef.current = true;
     clearExperimentTimer();
@@ -748,13 +772,14 @@ export default function WatchPage() {
     setExperimentEnded(true);
 
     const finishedSession = {
-      ...session,
+      ...activeSession,
       finished_at:
         reason === "time_limit"
-          ? session.expires_at || new Date().toISOString()
+          ? activeSession.expires_at || new Date().toISOString()
           : new Date().toISOString(),
       finish_reason: reason,
     };
+    sessionRef.current = finishedSession;
     localStorage.setItem(
       "youtube_experiment_session",
       JSON.stringify(finishedSession)
@@ -768,7 +793,7 @@ export default function WatchPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          session_id: session.session_id,
+          session_id: activeSession.session_id,
           reason,
         }),
         keepalive: true,

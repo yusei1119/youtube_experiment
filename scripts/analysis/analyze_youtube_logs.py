@@ -14,6 +14,8 @@ data/logs.jsonl（1行1イベントのJSONL）を読み込み、参加者IDの�
   - completion_rate           視聴完了率（最後まで見た割合）
   - early_skip_rate           早期スキップ率（2秒以内に飛ばした割合）
   - switch_per_min            切り替え頻度（1分あたり何本切り替えたか）
+  - session_minutes           開始から終了までの実測経過時間（分）
+  - logged_session_minutes    最初と最後のログの時刻差（診断用）
   - view_sec_var              視聴時間の分散（視聴時間が安定しているか）
   - max_consecutive_skip      連続スキップ長（何本連続で早期スキップしたか）
   - late_skip_increase        後半スキップ増加率（後半 − 前半の早期スキップ率）
@@ -685,6 +687,13 @@ def build_video_table(df):
     """1動画（参加者 × セッション × video_index）= 1行のテーブルを作る。"""
     if "viewing_duration_minutes" not in df.columns:
         df["viewing_duration_minutes"] = np.nan
+    for column in [
+        "session_started_at",
+        "session_expires_at",
+        "session_finished_at",
+    ]:
+        if column not in df.columns:
+            df[column] = pd.NaT
 
     # 数値列を数値型へ
     for col in [
@@ -698,6 +707,14 @@ def build_video_table(df):
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
     df["server_time"] = pd.to_datetime(df["server_time"], errors="coerce", utc=True, format="mixed")
+    for column in [
+        "session_started_at",
+        "session_expires_at",
+        "session_finished_at",
+    ]:
+        df[column] = pd.to_datetime(
+            df[column], errors="coerce", utc=True, format="mixed"
+        )
 
     screen_df = filter_screen_events(df)
 
@@ -726,6 +743,9 @@ def build_video_table(df):
             last_time=("server_time", "max"),         # その動画の最後のイベント時刻
             log_count=("event_type", "count"),
             viewing_duration_minutes=("viewing_duration_minutes", "max"),
+            session_started_at=("session_started_at", "min"),
+            session_expires_at=("session_expires_at", "max"),
+            session_finished_at=("session_finished_at", "max"),
         )
         .reset_index()
     )
@@ -848,9 +868,16 @@ def summarize_participant(group):
         else np.nan
     )
 
-    # セッションの所要時間（分）。切り替え頻度の分母。
+    # ログ上でイベントが存在した時刻幅（診断用）。
     span = g["last_time"].max() - g["first_time"].min()
-    minutes = span.total_seconds() / 60.0 if pd.notna(span) else np.nan
+    logged_minutes = span.total_seconds() / 60.0 if pd.notna(span) else np.nan
+    session_started_at = g["session_started_at"].min()
+    session_finished_at = g["session_finished_at"].max()
+    if pd.notna(session_started_at) and pd.notna(session_finished_at):
+        measured_span = session_finished_at - session_started_at
+        session_minutes = max(measured_span.total_seconds() / 60.0, 0.0)
+    else:
+        session_minutes = logged_minutes
     n = len(g)
 
     stats = {
@@ -865,11 +892,16 @@ def summarize_participant(group):
             "mean_view_sec": g["watched_sec"].mean(),
             "completion_rate": g["completed"].mean(),
             "early_skip_rate": g["early_skip"].mean(),
-            "switch_per_min": (n - 1) / minutes if minutes and minutes > 0 else np.nan,
+            "switch_per_min": (
+                (n - 1) / session_minutes
+                if session_minutes and session_minutes > 0
+                else np.nan
+            ),
             "view_sec_var": g["watched_sec"].var(ddof=1) if n > 1 else 0.0,
             "max_consecutive_skip": _max_consecutive(flags),
             "late_skip_increase": _late_skip_increase(flags),
-            "session_minutes": minutes,
+            "session_minutes": session_minutes,
+            "logged_session_minutes": logged_minutes,
         }
     stats.update(_category_view_time_stats(g))
     return pd.Series(stats)

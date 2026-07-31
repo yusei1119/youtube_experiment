@@ -29,6 +29,8 @@ class ParticipantCorrectionTests(unittest.TestCase):
                     "completed": False,
                     "early_skip": False,
                     "viewing_duration_minutes": 15,
+                    "session_started_at": pd.Timestamp("2026-07-31T00:00:00Z"),
+                    "session_finished_at": pd.Timestamp("2026-07-31T00:05:00Z"),
                 }
             ]
         )
@@ -36,6 +38,8 @@ class ParticipantCorrectionTests(unittest.TestCase):
         summary = build_summary_table(video)
 
         self.assertEqual(summary.loc[0, "viewing_duration_minutes"], 15)
+        self.assertEqual(summary.loc[0, "session_minutes"], 5)
+        self.assertAlmostEqual(summary.loc[0, "logged_session_minutes"], 0.2)
 
     def test_project_correction_file_contains_requested_rules(self):
         correction_path = (

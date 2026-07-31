@@ -1,7 +1,8 @@
 """Supabase の view_logs テーブルを JSONL に書き出すスクリプト。
 
 analyze_youtube_logs.py がそのまま読める data/logs.jsonl 形式（1行1イベント）で
-出力する。PostgREST の REST API を直接叩く。
+出力する。experiment_sessionsから実測開始・終了時刻も結合する。
+PostgREST の REST API を直接叩く。
 
 認証情報は .env.local（または環境変数）から読む:
   NEXT_PUBLIC_SUPABASE_URL
@@ -30,7 +31,8 @@ try:
 except ModuleNotFoundError:
     requests = None
 
-TABLE = "view_logs"
+LOG_TABLE = "view_logs"
+SESSION_TABLE = "experiment_sessions"
 PAGE_SIZE = 1000  # PostgREST の1リクエスト上限に合わせて分割取得
 DEFAULT_OUT = "data/exports/youtube_logs.jsonl"
 
@@ -51,14 +53,14 @@ def load_env(path=".env.local"):
             os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
 
-def fetch_all(base_url, headers):
-    """view_logs を server_time 昇順でページングしながら全件取得する。"""
+def fetch_all(base_url, headers, order_column):
+    """指定テーブルをページングしながら全件取得する。"""
     rows = []
     offset = 0
     while True:
         params = {
             "select": "*",
-            "order": "server_time.asc",
+            "order": f"{order_column}.asc",
             "limit": PAGE_SIZE,
             "offset": offset,
         }
@@ -70,6 +72,20 @@ def fetch_all(base_url, headers):
             break
         offset += PAGE_SIZE
     return rows
+
+
+def enrich_logs_with_session_timing(log_rows, session_rows):
+    """ログへセッションの実測開始・終了時刻を付与する。"""
+    sessions = {str(row.get("id")): row for row in session_rows if row.get("id")}
+    enriched = []
+    for source in log_rows:
+        row = dict(source)
+        session = sessions.get(str(row.get("session_id")), {})
+        row["session_started_at"] = session.get("started_at")
+        row["session_expires_at"] = session.get("expires_at")
+        row["session_finished_at"] = session.get("finished_at")
+        enriched.append(row)
+    return enriched
 
 
 def fetch_page(base_url, headers, params):
@@ -108,14 +124,16 @@ def main():
             "Supabase環境変数が未設定です（NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY）。"
         )
 
-    base_url = f"{url.rstrip('/')}/rest/v1/{TABLE}"
+    rest_url = f"{url.rstrip('/')}/rest/v1"
     headers = {
         "apikey": key,
         "Authorization": f"Bearer {key}",
         "Accept": "application/json",
     }
 
-    rows = fetch_all(base_url, headers)
+    log_rows = fetch_all(f"{rest_url}/{LOG_TABLE}", headers, "server_time")
+    session_rows = fetch_all(f"{rest_url}/{SESSION_TABLE}", headers, "id")
+    rows = enrich_logs_with_session_timing(log_rows, session_rows)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
