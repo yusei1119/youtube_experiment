@@ -17,11 +17,14 @@ drop table if exists experiment_sessions;
 create table experiment_sessions (
   id            uuid primary key,
   participant_id text not null,
+  viewing_duration_minutes integer not null
+                    check (viewing_duration_minutes in (5, 10, 15, 20, 25, 30)),
   playlist_id   text,
   video_count   integer,
   video_order   jsonb,                 -- シャッフル済みの動画リスト
   current_index integer default 0,
   started_at    timestamptz,
+  expires_at    timestamptz,
   finished_at   timestamptz,
   updated_at    timestamptz
 );
@@ -35,6 +38,7 @@ create table view_logs (
   participant_id   text,
   session_id       uuid references experiment_sessions (id) on delete cascade,
   playlist_id      text,
+  viewing_duration_minutes integer,
   video_id         text,
   video_title      text,
   video_index      integer,
@@ -72,6 +76,7 @@ with base as (
   select
     l.participant_id,
     l.session_id,
+    max(s.viewing_duration_minutes) as viewing_duration_minutes,
     l.video_index,
     min(l.video_id)    as video_id,
     min(l.video_title) as video_title,
@@ -142,6 +147,7 @@ halves as (
 select
   o.participant_id,
   o.session_id,
+  max(o.viewing_duration_minutes)                     as viewing_duration_minutes,
   count(*)                                            as total_videos,        -- 総視聴本数
   sum(o.watched_sec)                                  as total_view_sec,      -- 総視聴時間（秒）
   avg(o.watched_sec)                                  as mean_view_sec,       -- 平均視聴時間（秒）

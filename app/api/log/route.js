@@ -27,6 +27,29 @@ export async function POST(request) {
       );
     }
 
+    const expiresAtMs = new Date(session.expires_at).getTime();
+    if (
+      session.finished_at ||
+      !Number.isFinite(expiresAtMs) ||
+      Date.now() >= expiresAtMs
+    ) {
+      if (!session.finished_at && Number.isFinite(expiresAtMs)) {
+        await supabase
+          .from("experiment_sessions")
+          .update({
+            finished_at: session.expires_at,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", session.id)
+          .is("finished_at", null);
+      }
+
+      return NextResponse.json(
+        { error: "この視聴セッションは終了しています。" },
+        { status: 410 }
+      );
+    }
+
     const log = {
       id: crypto.randomUUID(),
       server_time: new Date().toISOString(),
@@ -34,6 +57,7 @@ export async function POST(request) {
       participant_id: session.participant_id,
       session_id: session.id,
       playlist_id: session.playlist_id,
+      viewing_duration_minutes: session.viewing_duration_minutes,
 
       video_id: body.video_id ?? null,
       video_title: body.video_title ?? "",

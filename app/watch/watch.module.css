@@ -16,6 +16,50 @@
   font-size: 16px;
 }
 
+.endedPage {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f5f6f8;
+  color: #161616;
+}
+
+.endedCard {
+  width: min(100%, 640px);
+  padding: 48px 40px;
+  border: 1px solid #e1e4e8;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(20, 24, 32, 0.12);
+  text-align: center;
+}
+
+.endedCard h1 {
+  margin: 20px 0 24px;
+  font-size: clamp(26px, 5vw, 36px);
+  line-height: 1.4;
+}
+
+.endedCard p {
+  margin: 8px 0;
+  font-size: clamp(17px, 3vw, 21px);
+  line-height: 1.8;
+}
+
+.endedIcon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #16803b;
+  color: #fff;
+  font-size: 38px;
+  font-weight: 900;
+}
+
 .viewer {
   width: min(100%, 540px);
   min-height: 100vh;

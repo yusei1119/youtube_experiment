@@ -683,8 +683,17 @@ def _estimate_playback_sec(group):
 
 def build_video_table(df):
     """1動画（参加者 × セッション × video_index）= 1行のテーブルを作る。"""
+    if "viewing_duration_minutes" not in df.columns:
+        df["viewing_duration_minutes"] = np.nan
+
     # 数値列を数値型へ
-    for col in ["current_time_sec", "duration_sec", "max_time_sec", "video_index"]:
+    for col in [
+        "current_time_sec",
+        "duration_sec",
+        "max_time_sec",
+        "video_index",
+        "viewing_duration_minutes",
+    ]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 
@@ -716,6 +725,7 @@ def build_video_table(df):
             first_time=("server_time", "min"),        # その動画を見始めた時刻
             last_time=("server_time", "max"),         # その動画の最後のイベント時刻
             log_count=("event_type", "count"),
+            viewing_duration_minutes=("viewing_duration_minutes", "max"),
         )
         .reset_index()
     )
@@ -844,6 +854,7 @@ def summarize_participant(group):
     n = len(g)
 
     stats = {
+            "viewing_duration_minutes": g["viewing_duration_minutes"].max(),
             "watched_titles": " | ".join(g["video_title"].fillna("").astype(str)),
             "watched_categories": " | ".join(watched_categories),
             "unique_category_count": non_empty_categories.nunique(),

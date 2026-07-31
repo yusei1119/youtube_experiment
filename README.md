@@ -85,6 +85,17 @@ npm run dev
 
 ブラウザで <http://localhost:3000> を開きます。
 
+### 視聴時間条件を使う前のSupabase更新
+
+参加者ごとに5〜30分（5分刻み）の視聴時間を選択する機能をデプロイする前に、
+SupabaseのSQL Editorで
+[`schemas/add_youtube_viewing_duration.sql`](schemas/add_youtube_viewing_duration.sql)
+を1回実行してください。既存データは削除せず、セッションと視聴ログに
+`viewing_duration_minutes`、セッションに`expires_at`を追加します。
+
+以降の`youtube_analysis_summary.csv`には、選択した条件が
+`viewing_duration_minutes`列として出力されます。
+
 ## フォルダ構成
 
 ```text

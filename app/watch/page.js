@@ -23,6 +23,7 @@ export default function WatchPage() {
   });
   const [isMuted, setIsMuted] = useState(true);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [experimentEnded, setExperimentEnded] = useState(false);
 
   const playerRef = useRef(null);
   const progressTimerRef = useRef(null);
@@ -39,6 +40,8 @@ export default function WatchPage() {
   const swipeAnimationTimerRef = useRef(null);
   const startNextVideoWithSoundRef = useRef(false);
   const audioUnlockedRef = useRef(false);
+  const experimentTimerRef = useRef(null);
+  const finishingRef = useRef(false);
 
   const currentVideo = useMemo(() => {
     if (!session || !session.video_order || session.video_order.length === 0) {
@@ -56,18 +59,49 @@ export default function WatchPage() {
       return;
     }
 
-    try {
-      const parsed = JSON.parse(saved);
-      queueMicrotask(() => {
+    async function restoreSession() {
+      try {
+        const parsed = JSON.parse(saved);
+        const response = await fetch(
+          `/api/session?session_id=${encodeURIComponent(parsed.session_id)}`,
+          { cache: "no-store" }
+        );
+        const status = await response.json();
+
+        if (!response.ok) {
+          throw new Error(status.error || "セッションの確認に失敗しました。");
+        }
+
         if (!mountedRef.current) return;
-        setSession(parsed);
-        setIndex(parsed.current_index || 0);
+
+        const restored = {
+          ...parsed,
+          ...status,
+          current_index: status.current_index ?? parsed.current_index ?? 0,
+        };
+        localStorage.setItem("youtube_experiment_session", JSON.stringify(restored));
+        setSession(restored);
+        setIndex(restored.current_index);
+        setExperimentEnded(status.expired);
         setPageLoaded(true);
-      });
-    } catch (error) {
-      console.error(error);
-      window.location.href = "/";
+
+        if (status.expired && !status.finished_at) {
+          fetch("/api/finish", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: restored.session_id }),
+            keepalive: true,
+          }).catch((error) => console.error("finish send failed:", error));
+        }
+      } catch (error) {
+        console.error(error);
+        alert(error.message || "セッションの確認に失敗しました。");
+        localStorage.removeItem("youtube_experiment_session");
+        window.location.href = "/";
+      }
     }
+
+    restoreSession();
 
     return () => {
       mountedRef.current = false;
@@ -76,6 +110,7 @@ export default function WatchPage() {
       clearPlaybackPulse();
       clearAutoplayRetry();
       clearSwipeAnimation();
+      clearExperimentTimer();
       destroyPlayer();
     };
   }, []);
@@ -100,7 +135,7 @@ export default function WatchPage() {
 
   useEffect(() => {
     function beforeUnloadHandler() {
-      sendLog("page_exit");
+      if (!experimentEnded) sendLog("page_exit");
     }
   
     window.addEventListener("beforeunload", beforeUnloadHandler);
@@ -108,10 +143,38 @@ export default function WatchPage() {
     return () => {
       window.removeEventListener("beforeunload", beforeUnloadHandler);
     };
-  }, [session, index, currentVideo]);
+  }, [session, index, currentVideo, experimentEnded]);
 
   useEffect(() => {
-    if (!pageLoaded || !session || !currentVideo) return;
+    if (!session || experimentEnded) return;
+
+    function checkTimeLimit() {
+      const expiresAtMs = new Date(session.expires_at).getTime();
+      if (!Number.isFinite(expiresAtMs) || Date.now() >= expiresAtMs) {
+        finishExperiment("time_limit");
+      }
+    }
+
+    const expiresAtMs = new Date(session.expires_at).getTime();
+    const remainingMs = Number.isFinite(expiresAtMs)
+      ? Math.max(0, expiresAtMs - Date.now())
+      : 0;
+    experimentTimerRef.current = window.setTimeout(checkTimeLimit, remainingMs);
+    window.addEventListener("focus", checkTimeLimit);
+    document.addEventListener("visibilitychange", checkTimeLimit);
+    checkTimeLimit();
+
+    return () => {
+      clearExperimentTimer();
+      window.removeEventListener("focus", checkTimeLimit);
+      document.removeEventListener("visibilitychange", checkTimeLimit);
+    };
+    // finishExperiment intentionally uses the latest values from this render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, experimentEnded]);
+
+  useEffect(() => {
+    if (!pageLoaded || !session || !currentVideo || experimentEnded) return;
 
     stopProgressTracking();
     stopPlaybackTracking();
@@ -146,7 +209,7 @@ export default function WatchPage() {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageLoaded, session, index]);
+  }, [pageLoaded, session, index, experimentEnded]);
 
   function loadNextVideo(videoId) {
     const player = playerRef.current;
@@ -415,6 +478,13 @@ export default function WatchPage() {
     }
   }
 
+  function clearExperimentTimer() {
+    if (experimentTimerRef.current) {
+      clearTimeout(experimentTimerRef.current);
+      experimentTimerRef.current = null;
+    }
+  }
+
   function resetSwipePosition() {
     setSwipeTransition("transform 360ms cubic-bezier(0.18, 0.9, 0.24, 1)");
     setSwipeOffset(0);
@@ -604,20 +674,54 @@ export default function WatchPage() {
     setIndex(nextIndex);
   }
 
-  async function finishExperiment() {
-    await fetch("/api/finish", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        session_id: session.session_id,
-      }),
-    });
+  async function finishExperiment(reason = "completed") {
+    if (!session || finishingRef.current || experimentEnded) return;
 
-    alert("実験は終了しました。");
-    localStorage.removeItem("youtube_experiment_session");
-    window.location.href = "/";
+    finishingRef.current = true;
+    clearExperimentTimer();
+    stopProgressTracking();
+    stopPlaybackTracking();
+    clearAutoplayRetry();
+    clearSwipeAnimation();
+    safeCall(() => playerRef.current?.pauseVideo());
+    destroyPlayer();
+    setPlayerReady(false);
+    setCommentOpen(false);
+    setExperimentEnded(true);
+
+    const finishedSession = {
+      ...session,
+      finished_at:
+        reason === "time_limit"
+          ? session.expires_at || new Date().toISOString()
+          : new Date().toISOString(),
+      finish_reason: reason,
+    };
+    localStorage.setItem(
+      "youtube_experiment_session",
+      JSON.stringify(finishedSession)
+    );
+    setSession(finishedSession);
+
+    try {
+      const response = await fetch("/api/finish", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          session_id: session.session_id,
+          reason,
+        }),
+        keepalive: true,
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "終了時刻の保存に失敗しました。");
+      }
+    } catch (error) {
+      console.error("finish send failed:", error);
+    }
   }
 
   async function goNext(source = "button") {
@@ -809,6 +913,19 @@ export default function WatchPage() {
         console.error(error);
       }
     }
+  }
+
+  if (experimentEnded) {
+    return (
+      <main className={styles.endedPage}>
+        <section className={styles.endedCard} aria-labelledby="experiment-ended-title">
+          <div className={styles.endedIcon} aria-hidden="true">✓</div>
+          <h1 id="experiment-ended-title">ショート動画の視聴条件は終了です。</h1>
+          <p>このウインドウを閉じてください。</p>
+          <p>メールに従って、次のタスクに移行してください。</p>
+        </section>
+      </main>
+    );
   }
 
   if (!session || !currentVideo) {

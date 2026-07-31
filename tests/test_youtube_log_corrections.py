@@ -6,12 +6,37 @@ import pandas as pd
 from scripts.analysis.analyze_youtube_logs import (
     apply_participant_corrections,
     apply_session_corrections,
+    build_summary_table,
     load_participant_corrections,
     load_session_corrections,
 )
 
 
 class ParticipantCorrectionTests(unittest.TestCase):
+    def test_selected_viewing_duration_is_written_to_summary_csv_row(self):
+        video = pd.DataFrame(
+            [
+                {
+                    "participant_id": "B001",
+                    "session_id": "session-1",
+                    "video_index": 0,
+                    "video_title": "sample",
+                    "video_category": "Music",
+                    "watched_sec": 12.0,
+                    "duration_sec": 20.0,
+                    "first_time": pd.Timestamp("2026-07-31T00:00:00Z"),
+                    "last_time": pd.Timestamp("2026-07-31T00:00:12Z"),
+                    "completed": False,
+                    "early_skip": False,
+                    "viewing_duration_minutes": 15,
+                }
+            ]
+        )
+
+        summary = build_summary_table(video)
+
+        self.assertEqual(summary.loc[0, "viewing_duration_minutes"], 15)
+
     def test_project_correction_file_contains_requested_rules(self):
         correction_path = (
             Path(__file__).resolve().parents[1]
