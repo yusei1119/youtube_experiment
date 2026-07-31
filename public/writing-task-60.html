@@ -14,6 +14,10 @@
     input[type="text"], select, textarea { width: 100%; box-sizing: border-box; padding: 10px; font: inherit; border: 1px solid #9ca3af; border-radius: 5px; background: white; }
     input[type="text"], select { margin-bottom: 12px; }
     textarea { min-height: 220px; line-height: 1.65; resize: vertical; }
+    .answer-meta { display: flex; justify-content: flex-end; min-height: 1.5em; margin-top: 4px; }
+    .char-count { font-size: .78rem; font-weight: 650; }
+    .char-count.invalid { color: #b91c1c; }
+    .char-count.valid { color: #15803d; }
     button { padding: 9px 18px; font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid #6b7280; background: #f5f5f5; }
     button.primary { background: #2563eb; border-color: #2563eb; color: white; }
     button:disabled { opacity: .5; cursor: default; }
@@ -61,7 +65,10 @@
     <div id="category-label" class="category"></div>
     <h2 id="question-text"></h2>
     <label for="answer-text" class="small">自由記述でお答えください</label>
-    <textarea id="answer-text"></textarea>
+    <textarea id="answer-text" aria-describedby="char-count"></textarea>
+    <div class="answer-meta">
+      <span id="char-count" class="char-count invalid" aria-live="polite"></span>
+    </div>
     <div class="buttons">
       <button id="back-button">戻る</button>
       <button id="next-button" class="primary" disabled>次へ</button>
@@ -94,46 +101,56 @@
       general: {
         label: "一般",
         questionNumber: 1,
+        minChars: 60,
+        maxChars: 200,
         prompts: [
-          "なぜ人の人生には映画が必要だと思いますか？",
-          "映画を見るという行為によって、あなたは何を失いますか？",
-          "「映像を観る」という体験は、あなたの世界をどのように拡張、あるいは制限すると思いますか？"
+          "映画を観ることは，人の人生にどのような意味を持つと思いますか？あなたの考えと，その理由を説明してください。",
+          "映画を観ることは，人のものの見方にどのような影響を与えると思いますか？あなたの考えと，その理由を説明してください。",
+          "映像を観る体験は，人の世界の捉え方をどのように変えると思いますか？あなたの考えとその理由を説明してください。"
         ]
       },
       content: {
         label: "内容",
         questionNumber: 2,
+        minChars: 60,
+        maxChars: 140,
         prompts: [
-          "先ほどの映像の中で、「何が正しい生き方なのか」についてあなたの考えを教えてください。",
-          "先ほどの映像は、人のどのような部分を映し出していると思いますか？",
-          "先ほどの映像では、登場人物のどのような選択や葛藤が描かれていたと思いますか？"
+          "先ほどの映像では，登場人物の生き方についてどのような価値観が描かれていたと思いますか？そう考えた場面や出来事を挙げて説明してください。",
+          "先ほどの映像では，人のどのような側面が描かれていたと思いますか？そう考えた場面や出来事を挙げて説明してください。",
+          "先ほどの映像では，登場人物のどのような選択や葛藤が描かれていたと思いますか？そう考えた場面や出来事を挙げて説明してください。"
         ]
       },
       inquiry: {
         label: "問い",
         questionNumber: 3,
+        minChars: 50,
+        maxChars: 120,
         prompts: [
-          "先ほどの映像の制作者があなたに残した「問い」は何だと思いますか？",
-          "先ほどの映像が描こうとしている最も根本的な問いは何だと思いますか？",
-          "先ほどの映像を通して、制作者はあなたにどのような「問い」を残しましたか？"
+          "先ほどの映像の制作者があなたに残した“問い”は何だと思いますか？その問いだと考えた理由も説明してください。",
+          "先ほどの映像が描こうとしている最も根本的な問いは何だと思いますか？その問いだと考えた理由も説明してください。",
+          "先ほどの映像を通して，制作者はあなたにどのような「問い」を残しましたか？その問いだと考えた理由も説明してください。"
         ]
       },
       emotion: {
         label: "感情",
         questionNumber: 4,
+        minChars: 80,
+        maxChars: 200,
         prompts: [
-          "先ほどの映像を観た後、あなたは最後にどのような感情が残りましたか？ 経緯を追って説明してください。",
-          "「心が動く」とは、それまでの自分の見方や感じ方が揺さぶられる現象とも言えます。そのような揺らぎは、あなたの内側でどのような変化として現れると思いますか？",
-          "先ほどの映像を観ている間に、あなたの気持ちはどのように変化しましたか？ 印象に残った場面とあわせて説明してください。"
+          "先ほどの映像を観た後，最も強く残った感情は何ですか？その感情に至った経緯を，印象に残った場面とあわせて説明してください。",
+          "先ほどの映像を観ている間に，最も大きく気持ちが動いたのはどのようなときですか？その感情の変化を，きっかけとなった場面とあわせて説明してください。",
+          "先ほどの映像を観ている間に，あなたの気持ちはどのように変化しましたか？その変化を，印象に残った場面とあわせて説明してください。"
         ]
       },
       summary: {
         label: "要約",
         questionNumber: 5,
+        minChars: 40,
+        maxChars: 90,
         prompts: [
-          "先ほどの映像を一文で表すと、どのような物語になりますか？",
-          "先ほどの映像で起きたことを、映像を観ていない人にも伝わる一文で要約してください。",
-          "先ほどの映像の中心的な出来事や意味を、一文でまとめてください。"
+          "先ほどの映像について，中心的な出来事とその意味が伝わるように，一文でまとめてください。",
+          "先ほどの映像を観ていない人にも，中心的な出来事とその意味が伝わるように，一文で要約してください。",
+          "先ほどの映像の中心的な出来事と，それが示している意味を，一文でまとめてください。"
         ]
       }
     };
@@ -157,6 +174,7 @@
     const categoryLabel = document.getElementById("category-label");
     const questionText = document.getElementById("question-text");
     const answerText = document.getElementById("answer-text");
+    const charCount = document.getElementById("char-count");
     const submitStatus = document.getElementById("submit-status");
     const finishTitle = document.getElementById("finish-title");
     const finishMessage = document.getElementById("finish-message");
@@ -229,6 +247,8 @@
           categoryKey,
           category: category.label,
           variant: variantIndex + 1,
+          minChars: category.minChars,
+          maxChars: category.maxChars,
           prompt: `Q${category.questionNumber}. ${category.prompts[variantIndex]}`
         });
       }
@@ -308,7 +328,17 @@
     }
 
     function updateNextButton() {
-      nextButton.disabled = answerText.value.trim().length === 0;
+      const question = questions[currentIndex];
+      const currentChars = countCharacters(answerText.value);
+      const isValid = currentChars >= question.minChars && currentChars <= question.maxChars;
+      charCount.textContent = `${currentChars}字（${question.minChars}〜${question.maxChars}字）`;
+      charCount.classList.toggle("valid", isValid);
+      charCount.classList.toggle("invalid", !isValid);
+      nextButton.disabled = !isValid;
+    }
+
+    function countCharacters(value) {
+      return Array.from(value.trim()).length;
     }
 
     function showOnly(screen) {
@@ -456,8 +486,13 @@
 
     async function handleSubmit() {
       if (submitted) return;
-      if (states.some(state => !state.answer)) {
-        alert("未回答の質問があります。");
+      const hasInvalidAnswer = states.some((state, index) => {
+        const characterCount = countCharacters(state.answer);
+        const question = questions[index];
+        return characterCount < question.minChars || characterCount > question.maxChars;
+      });
+      if (hasInvalidAnswer) {
+        alert("文字数が指定範囲外の回答があります。");
         return;
       }
       submitButton.disabled = true;
