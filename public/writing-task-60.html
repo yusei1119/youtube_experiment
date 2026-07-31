@@ -189,6 +189,7 @@
     let visitWritingStartedMs = null;
     let visitStartedWithAnswer = false;
     let visitFirstInputRecorded = false;
+    let visitPreviousAnswer = "";
     let surveyStartedAt = null;
     let surveyStartPerfMs = null;
     let submitted = false;
@@ -273,6 +274,10 @@
         firstShownMs: null,
         cumulativeLatencyMs: 0,
         cumulativeWritingDurationMs: 0,
+        cumulativeTimeBeforeMinMs: 0,
+        minCharsReachedText: null,
+        minCharsReachedMs: null,
+        deletedCharCount: 0,
         visits: 0,
         revisionCount: 0
       }));
@@ -280,6 +285,8 @@
       questionVisitStartedMs = null;
       visitWritingStartedMs = null;
       visitStartedWithAnswer = false;
+      visitFirstInputRecorded = false;
+      visitPreviousAnswer = "";
       surveyStartedAt = null;
       surveyStartPerfMs = null;
       submitted = false;
@@ -303,6 +310,7 @@
       visitWritingStartedMs = null;
       visitStartedWithAnswer = state.answer.length > 0;
       visitFirstInputRecorded = false;
+      visitPreviousAnswer = state.answer;
       updateNextButton();
       answerText.focus();
     }
@@ -321,10 +329,15 @@
         // 修正せずに離れた再訪は、訪問全体を入力前時間に分類する。
         state.cumulativeLatencyMs += now - questionVisitStartedMs;
       }
+      if (state.minCharsReachedMs === null) {
+        state.cumulativeTimeBeforeMinMs += now - questionVisitStartedMs;
+      }
       state.visits += 1;
       questionVisitStartedMs = null;
       visitWritingStartedMs = null;
       visitStartedWithAnswer = false;
+      visitFirstInputRecorded = false;
+      visitPreviousAnswer = "";
     }
 
     function updateNextButton() {
@@ -430,6 +443,12 @@
           question_text: question.prompt,
           answer_text: state.answer,
           answer_char_count: Array.from(state.answer).length,
+          min_char_count: question.minChars,
+          max_char_count: question.maxChars,
+          min_chars_reached_text: state.minCharsReachedText,
+          chars_after_min: Math.max(Array.from(state.answer).length - question.minChars, 0),
+          deleted_char_count: state.deletedCharCount,
+          min_chars_reached_sec: Number((state.minCharsReachedMs / 1000).toFixed(3)),
           first_shown_sec: Number((state.firstShownMs / 1000).toFixed(3)),
           latency_sec: Number((state.cumulativeLatencyMs / 1000).toFixed(3)),
           writing_duration_sec: Number((state.cumulativeWritingDurationMs / 1000).toFixed(3)),
@@ -515,11 +534,25 @@
       }
     }
 
-    answerText.addEventListener("input", () => {
+    answerText.addEventListener("input", event => {
       const state = states[currentIndex];
+      if (!state || questionVisitStartedMs === null) return;
+      const now = performance.now();
+      const currentAnswer = answerText.value;
+
+      if (
+        !event.isComposing
+        && typeof event.inputType === "string"
+        && event.inputType.startsWith("delete")
+      ) {
+        state.deletedCharCount += Math.max(
+          countCharacters(visitPreviousAnswer) - countCharacters(currentAnswer),
+          0
+        );
+      }
+
       // 初回回答は入力前をlatency、既存回答の修正は再訪時間全体をwritingに加算する。
-      if (state && !visitFirstInputRecorded && questionVisitStartedMs !== null) {
-        const now = performance.now();
+      if (!visitFirstInputRecorded) {
         if (visitStartedWithAnswer) {
           // 既存回答の修正訪問は、再表示時点から記述時間とする。
           visitWritingStartedMs = questionVisitStartedMs;
@@ -528,6 +561,19 @@
           visitWritingStartedMs = now;
         }
         visitFirstInputRecorded = true;
+      }
+
+      visitPreviousAnswer = currentAnswer;
+
+      const question = questions[currentIndex];
+      if (
+        state.minCharsReachedMs === null
+        && countCharacters(currentAnswer) >= question.minChars
+      ) {
+        state.minCharsReachedText = currentAnswer.trim();
+        state.minCharsReachedMs = (
+          state.cumulativeTimeBeforeMinMs + now - questionVisitStartedMs
+        );
       }
       updateNextButton();
     });

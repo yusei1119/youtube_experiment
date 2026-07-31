@@ -82,12 +82,28 @@ MEASURES = ("Latency", "Writing", "Chars")
 ALL_METRICS = OVERALL_METRICS + tuple(
     f"{category}_{measure}" for category in CATEGORIES for measure in MEASURES
 )
+EVALUATION_QUESTION_MEASURES_60 = (
+    "chars_after_min",
+    "deleted_char_count",
+    "min_chars_reached_sec",
+    "latency_sec",
+)
+EVALUATION_OVERALL_METRICS_60 = (
+    "Mean_chars_after_min",
+    "Mean_deleted_char_count",
+    "Mean_min_chars_reached_sec",
+    "Mean_latency_sec",
+)
 METRIC_LABELS = {
     "Total_task_sec": "Total task time",
     "Total_answer_sec": "Total answer time",
     "Latency_sec": "Time to first input (sum)",
     "Writing_sec": "Writing time (sum)",
     "Total_chars": "Total character count",
+    "Mean_chars_after_min": "Additional characters after minimum (5-question mean)",
+    "Mean_deleted_char_count": "Deleted characters (5-question mean)",
+    "Mean_min_chars_reached_sec": "Time to minimum length (5-question mean)",
+    "Mean_latency_sec": "Time to first input (5-question mean)",
 }
 for _category in CATEGORIES:
     for _measure in MEASURES:
@@ -162,6 +178,9 @@ def extract_writing_metrics(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFram
     latency_columns = []
     writing_columns = []
     char_columns = []
+    evaluation_columns = {
+        measure: [] for measure in EVALUATION_QUESTION_MEASURES_60
+    }
     question_frames = []
 
     for category in CATEGORIES:
@@ -195,10 +214,26 @@ def extract_writing_metrics(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFram
             "display_order": result.get(f"{category}_display_order", pd.Series(np.nan, index=result.index)),
             "question_text": result.get(f"{category}_question_text", pd.Series("", index=result.index)),
             "answer_text": result.get(f"{category}_answer_text", pd.Series("", index=result.index)),
+            "min_char_count": numeric_series(result, f"{category}_min_char_count"),
+            "max_char_count": numeric_series(result, f"{category}_max_char_count"),
+            "min_chars_reached_text": result.get(
+                f"{category}_min_chars_reached_text", pd.Series("", index=result.index)
+            ),
             "Latency": latency,
             "Writing": writing,
             "Chars": chars,
         }
+        evaluation_sources = {
+            "chars_after_min": numeric_series(result, f"{category}_chars_after_min"),
+            "deleted_char_count": numeric_series(result, f"{category}_deleted_char_count"),
+            "min_chars_reached_sec": numeric_series(result, f"{category}_min_chars_reached_sec"),
+            "latency_sec": latency,
+        }
+        for measure, values in evaluation_sources.items():
+            metadata[measure] = values
+            column_name = f"{category}_{measure}"
+            result[column_name] = values
+            evaluation_columns[measure].append(column_name)
         for grouping_column in ("video_condition", "viewing_duration"):
             if grouping_column in result:
                 metadata[grouping_column] = result[grouping_column]
@@ -215,6 +250,23 @@ def extract_writing_metrics(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFram
     result["Total_chars"] = numeric_series(result, "total_char_count").combine_first(
         derived_chars
     )
+    overall_metric_by_measure = dict(zip(
+        EVALUATION_QUESTION_MEASURES_60,
+        EVALUATION_OVERALL_METRICS_60,
+    ))
+    for measure, columns in evaluation_columns.items():
+        derived_mean = result[columns].mean(axis=1, skipna=False)
+        export_mean = numeric_series(result, overall_metric_by_measure[measure])
+        # exporterの列名はsnake_case、分析列名は既存指標に合わせた表示用名称。
+        export_snake_name = {
+            "chars_after_min": "mean_chars_after_min",
+            "deleted_char_count": "mean_deleted_char_count",
+            "min_chars_reached_sec": "mean_min_chars_reached_sec",
+            "latency_sec": "mean_latency_sec",
+        }[measure]
+        result[overall_metric_by_measure[measure]] = numeric_series(
+            result, export_snake_name
+        ).combine_first(export_mean).combine_first(derived_mean)
     return result, pd.concat(question_frames, ignore_index=True)
 
 
@@ -340,13 +392,14 @@ def descriptive_statistics(
     data: pd.DataFrame,
     group_column: str,
     group_order: tuple[str, ...],
+    metrics: tuple[str, ...] = ALL_METRICS,
 ) -> pd.DataFrame:
     rows = []
     for group_name in group_order:
         group = data[data[group_column] == group_name]
         if group.empty:
             continue
-        for metric in ALL_METRICS:
+        for metric in metrics:
             values = pd.to_numeric(group[metric], errors="coerce")
             clean = values.dropna()
             if clean.size >= 2:
@@ -378,13 +431,14 @@ def descriptive_statistics(
 def question_variant_descriptives(
     question_data: pd.DataFrame,
     group_column: str,
+    measures: tuple[str, ...] = MEASURES,
 ) -> pd.DataFrame:
     long = question_data.melt(
         id_vars=[
             group_column, "category", "category_label", "question_id",
             "variant_number", "question_text",
         ],
-        value_vars=list(MEASURES),
+        value_vars=list(measures),
         var_name="measure",
         value_name="value",
     )
@@ -688,6 +742,32 @@ def write_report_60(
             ]
             means.append(f"{float(match.iloc[0]['mean']):.2f}" if not match.empty else "NA")
         lines.append(f"| {duration} | {len(group)} | " + " | ".join(means) + " |")
+    available_evaluation_metrics = tuple(
+        metric for metric in EVALUATION_OVERALL_METRICS_60
+        if metric in set(descriptives["metric"])
+        and descriptives.loc[descriptives["metric"] == metric, "n"].sum() > 0
+    )
+    if available_evaluation_metrics:
+        lines.extend([
+            "", "## 追加評価指標の条件別5問平均", "",
+            "| 視聴時間 | 下限後追加文字数 | 削除文字数 | 下限到達時間 | 入力開始まで |",
+            "|---|---:|---:|---:|---:|",
+        ])
+        for duration in DURATIONS_60:
+            group = data[data["viewing_duration"] == duration]
+            if group.empty:
+                continue
+            values = []
+            for metric in EVALUATION_OVERALL_METRICS_60:
+                match = descriptives[
+                    (descriptives["viewing_duration"] == duration)
+                    & (descriptives["metric"] == metric)
+                ]
+                values.append(
+                    f"{float(match.iloc[0]['mean']):.2f}"
+                    if not match.empty and int(match.iloc[0]["n"]) > 0 else "NA"
+                )
+            lines.append(f"| {duration} | " + " | ".join(values) + " |")
     significant = pairwise[
         pd.to_numeric(pairwise["p_holm_within_metric"], errors="coerce") < 0.05
     ]
@@ -811,11 +891,39 @@ def analyze_60(args: argparse.Namespace) -> None:
     included_rows = set(data["source_row"].astype(int))
     report.loc[report["source_row"].isin(included_rows), ["included", "reason"]] = [True, "included"]
     question_data = question_data[question_data["source_row"].isin(included_rows)].copy()
-    descriptives = descriptive_statistics(data, "viewing_duration", DURATIONS_60)
-    variant_descriptives = question_variant_descriptives(question_data, "viewing_duration")
+    has_new_evaluation_data = (
+        "Mean_chars_after_min" in data
+        and data["Mean_chars_after_min"].notna().any()
+    )
+    available_evaluation_metrics = tuple(
+        metric for metric in EVALUATION_OVERALL_METRICS_60
+        if has_new_evaluation_data and metric in data and data[metric].notna().any()
+    )
+    # latency_secは既存の質問別Latencyと同じ値なので、記述統計では重複させない。
+    available_evaluation_measures = tuple(
+        measure for measure in EVALUATION_QUESTION_MEASURES_60
+        if has_new_evaluation_data
+        and measure != "latency_sec"
+        and measure in question_data
+        and question_data[measure].notna().any()
+    )
+    descriptives = descriptive_statistics(
+        data,
+        "viewing_duration",
+        DURATIONS_60,
+        (*ALL_METRICS, *available_evaluation_metrics),
+    )
+    variant_descriptives = question_variant_descriptives(
+        question_data,
+        "viewing_duration",
+        (*MEASURES, *available_evaluation_measures),
+    )
     omnibus, pairwise = independent_analysis(data, "viewing_duration", DURATIONS_60)
     pairwise_table = pairwise_wide_table(pairwise, DURATIONS_60)
-    analysis_columns = ["participant_id", "viewing_duration", *ALL_METRICS]
+    analysis_columns = [
+        "participant_id", "viewing_duration", *ALL_METRICS,
+        *available_evaluation_metrics,
+    ]
     save_csv(report.sort_values("source_row"), output / "writing_60_filter_report.csv")
     save_csv(data[analysis_columns], output / "writing_60_analysis_data.csv")
     save_csv(question_data, output / "writing_60_question_data_long.csv")

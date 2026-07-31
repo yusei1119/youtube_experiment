@@ -25,6 +25,19 @@ from scripts.common.output_versioning import versioned_file
 
 PAGE_SIZE = 1000
 DEFAULT_OUTPUT = "data/exports/writing_60_responses.csv"
+RESPONSE_FIELDS = (
+    "question_id", "display_order", "category_label", "variant_number",
+    "question_text", "answer_text", "answer_char_count", "min_char_count",
+    "max_char_count", "min_chars_reached_text", "chars_after_min",
+    "deleted_char_count", "min_chars_reached_sec", "first_shown_sec",
+    "latency_sec", "writing_duration_sec", "visits", "revision_count",
+)
+EVALUATION_MEAN_FIELDS = {
+    "mean_chars_after_min": "chars_after_min",
+    "mean_deleted_char_count": "deleted_char_count",
+    "mean_min_chars_reached_sec": "min_chars_reached_sec",
+    "mean_latency_sec": "latency_sec",
+}
 
 
 def load_env(path: str = ".env.local") -> None:
@@ -64,6 +77,19 @@ def fetch_all(url: str, headers: dict[str, str], params: dict[str, Any]) -> list
         offset += PAGE_SIZE
 
 
+def evaluation_means(responses: list[dict[str, Any]]) -> dict[str, float | None]:
+    """追加評価指標の5問平均を作る。旧回答で値がなければ空欄にする。"""
+    result: dict[str, float | None] = {}
+    for output_field, response_field in EVALUATION_MEAN_FIELDS.items():
+        values = [
+            float(response[response_field])
+            for response in responses
+            if response.get(response_field) is not None
+        ]
+        result[output_field] = round(sum(values) / len(values), 3) if values else None
+    return result
+
+
 def flatten_long(submissions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     submission_fields = [
@@ -73,13 +99,17 @@ def flatten_long(submissions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "total_answer_duration_sec", "total_char_count", "created_at",
     ]
     for submission in submissions:
+        responses = submission.get("writing_60_responses", [])
         common = {
             ("submission_id" if key == "id" else key): submission.get(key)
             for key in submission_fields
         }
-        for response in submission.get("writing_60_responses", []):
-            response = {key: value for key, value in response.items() if key != "id"}
-            rows.append({**common, **response})
+        common.update(evaluation_means(responses))
+        for response in responses:
+            response_values = {
+                key: response.get(key) for key in ("category_key", *RESPONSE_FIELDS)
+            }
+            rows.append({**common, **response_values})
     return rows
 
 
@@ -92,12 +122,11 @@ def flatten_wide(submissions: list[dict[str, Any]]) -> list[dict[str, Any]]:
             for key, value in submission.items()
             if key != "writing_60_responses"
         }
-        for response in submission.get("writing_60_responses", []):
+        responses = submission.get("writing_60_responses", [])
+        row.update(evaluation_means(responses))
+        for response in responses:
             prefix = response["category_key"]
-            for key in ("question_id", "display_order", "category_label", "variant_number",
-                        "question_text", "answer_text", "answer_char_count", "first_shown_sec",
-                        "latency_sec", "writing_duration_sec", "visits",
-                        "revision_count"):
+            for key in RESPONSE_FIELDS:
                 row[f"{prefix}_{key}"] = response.get(key)
         rows.append(row)
     duration_order = {f"{minutes}min": minutes for minutes in range(5, 31, 5)}

@@ -51,6 +51,12 @@ create table if not exists public.writing_60_responses (
   question_text text not null,
   answer_text text not null,
   answer_char_count integer not null check (answer_char_count >= 0),
+  min_char_count integer check (min_char_count >= 0),
+  max_char_count integer check (max_char_count >= min_char_count),
+  min_chars_reached_text text,
+  chars_after_min integer check (chars_after_min >= 0),
+  deleted_char_count integer check (deleted_char_count >= 0),
+  min_chars_reached_sec double precision check (min_chars_reached_sec >= 0),
   first_shown_sec double precision not null check (first_shown_sec >= 0),
   latency_sec double precision not null check (latency_sec >= 0),
   writing_duration_sec double precision not null check (writing_duration_sec >= 0),
@@ -63,6 +69,16 @@ create table if not exists public.writing_60_responses (
 alter table public.writing_60_submissions
   add column if not exists total_answer_duration_sec double precision
   check (total_answer_duration_sec >= 0);
+
+-- 追加評価指標。既存回答を保持するため、移行時点ではnullableとする。
+alter table public.writing_60_responses
+  add column if not exists min_char_count integer check (min_char_count >= 0),
+  add column if not exists max_char_count integer check (max_char_count >= min_char_count),
+  add column if not exists min_chars_reached_text text,
+  add column if not exists chars_after_min integer check (chars_after_min >= 0),
+  add column if not exists deleted_char_count integer check (deleted_char_count >= 0),
+  add column if not exists min_chars_reached_sec double precision
+    check (min_chars_reached_sec >= 0);
 
 -- 旧指標を新指標へ変換する。旧cumulativeはlatencyを含むため差し引く。
 do $$
@@ -149,6 +165,14 @@ comment on column public.writing_60_submissions.total_answer_duration_sec is
   '5問分のlatency_secとwriting_duration_secの合計。確認画面・送信時間は含まない';
 comment on column public.writing_60_responses.answer_char_count is
   '回答のUnicode文字数（先頭末尾の空白を除き、回答内の空白・改行・句読点を含む）';
+comment on column public.writing_60_responses.min_chars_reached_text is
+  '最初に下限文字数へ到達した入力イベント時点の文章';
+comment on column public.writing_60_responses.chars_after_min is
+  '最終回答文字数から下限文字数を引いた追加文字数';
+comment on column public.writing_60_responses.deleted_char_count is
+  'delete系inputイベントで減少したUnicode文字数の累計';
+comment on column public.writing_60_responses.min_chars_reached_sec is
+  '質問を表示していた時間のうち、最初に下限文字数へ到達するまでの累計秒';
 comment on column public.writing_60_submissions.total_char_count is
   '5問分のanswer_char_count合計';
 
@@ -207,7 +231,9 @@ begin
   insert into public.writing_60_responses (
     submission_id, question_id, display_order, category_key, category_label,
     variant_number, question_text, answer_text, answer_char_count, first_shown_sec,
-    latency_sec, writing_duration_sec, visits, revision_count
+    min_char_count, max_char_count, min_chars_reached_text, chars_after_min,
+    deleted_char_count, min_chars_reached_sec, latency_sec, writing_duration_sec,
+    visits, revision_count
   )
   select
     new_submission_id,
@@ -220,6 +246,12 @@ begin
     nullif(btrim(item->>'answer_text'), ''),
     char_length(nullif(btrim(item->>'answer_text'), '')),
     (item->>'first_shown_sec')::double precision,
+    nullif(item->>'min_char_count', '')::integer,
+    nullif(item->>'max_char_count', '')::integer,
+    nullif(item->>'min_chars_reached_text', ''),
+    nullif(item->>'chars_after_min', '')::integer,
+    nullif(item->>'deleted_char_count', '')::integer,
+    nullif(item->>'min_chars_reached_sec', '')::double precision,
     coalesce(nullif(item->>'latency_sec', '')::double precision, 0),
     (item->>'writing_duration_sec')::double precision,
     (item->>'visits')::integer,
