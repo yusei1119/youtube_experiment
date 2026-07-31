@@ -213,7 +213,7 @@ export default function WatchPage() {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageLoaded, session, index, experimentEnded]);
+  }, [pageLoaded, index, experimentEnded]);
 
   function loadNextVideo(videoId) {
     const player = playerRef.current;
