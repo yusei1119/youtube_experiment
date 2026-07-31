@@ -331,7 +331,7 @@
       const question = questions[currentIndex];
       const currentChars = countCharacters(answerText.value);
       const isValid = currentChars >= question.minChars && currentChars <= question.maxChars;
-      charCount.textContent = `${currentChars}字（${question.minChars}〜${question.maxChars}字）`;
+      charCount.textContent = `${currentChars}字`;
       charCount.classList.toggle("valid", isValid);
       charCount.classList.toggle("invalid", !isValid);
       nextButton.disabled = !isValid;
