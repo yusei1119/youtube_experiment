@@ -27,6 +27,13 @@ export async function POST(request) {
       );
     }
 
+    if (!session.started_at || !session.expires_at) {
+      return NextResponse.json(
+        { error: "動画視聴はまだ開始されていません。" },
+        { status: 409 }
+      );
+    }
+
     const expiresAtMs = new Date(session.expires_at).getTime();
     if (
       session.finished_at ||

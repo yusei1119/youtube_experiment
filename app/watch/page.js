@@ -23,6 +23,7 @@ export default function WatchPage() {
   });
   const [isMuted, setIsMuted] = useState(true);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [startingPlayback, setStartingPlayback] = useState(false);
   const [experimentEnded, setExperimentEnded] = useState(false);
 
   const playerRef = useRef(null);
@@ -42,6 +43,7 @@ export default function WatchPage() {
   const audioUnlockedRef = useRef(false);
   const experimentTimerRef = useRef(null);
   const finishingRef = useRef(false);
+  const viewingStartRequestRef = useRef(false);
 
   const currentVideo = useMemo(() => {
     if (!session || !session.video_order || session.video_order.length === 0) {
@@ -146,7 +148,9 @@ export default function WatchPage() {
   }, [session, index, currentVideo, experimentEnded]);
 
   useEffect(() => {
-    if (!session || experimentEnded) return;
+    if (!session || experimentEnded || !session.started_at || !session.expires_at) {
+      return;
+    }
 
     function checkTimeLimit() {
       const expiresAtMs = new Date(session.expires_at).getTime();
@@ -251,7 +255,7 @@ export default function WatchPage() {
       height: "640",
       videoId,
       playerVars: {
-        autoplay: 1,
+        autoplay: 0,
         controls: 0,
         mute: 1,
         cc_load_policy: 0,
@@ -282,10 +286,12 @@ export default function WatchPage() {
     setPlayerReady(true);
     disableCaptions();
     startNextVideoWithSoundRef.current = false;
-    attemptAutoplay();
-    startPlaybackTracking();
-    await sendLog("video_loaded");
-    await sendLog("autoplay_attempt");
+    if (session?.started_at && session?.expires_at) {
+      attemptAutoplay();
+      startPlaybackTracking();
+      await sendLog("video_loaded");
+      await sendLog("autoplay_attempt");
+    }
   }
 
   async function toggleMute() {
@@ -308,6 +314,17 @@ export default function WatchPage() {
     const YT = window.YT;
 
     if (event.data === YT.PlayerState.PLAYING) {
+      if (!session?.started_at || !session?.expires_at) {
+        if (!audioUnlockedRef.current) {
+          safeCall(() => playerRef.current?.pauseVideo());
+          return;
+        }
+
+        const timerStarted = await startViewingTimer();
+        if (!timerStarted) return;
+      }
+
+      setStartingPlayback(false);
       clearAutoplayRetry();
       disableCaptions();
       setPlayerReady(true);
@@ -570,13 +587,54 @@ export default function WatchPage() {
     }, 700);
   }
 
-  function unlockAudio() {
+  async function unlockAudio() {
+    if (startingPlayback) return;
+    setStartingPlayback(true);
     audioUnlockedRef.current = true;
     setAudioUnlocked(true);
     safeCall(() => playerRef.current?.unMute());
     safeCall(() => playerRef.current?.setVolume(100));
     safeCall(() => playerRef.current?.playVideo());
     setIsMuted(false);
+  }
+
+  async function startViewingTimer() {
+    if (viewingStartRequestRef.current) return false;
+    viewingStartRequestRef.current = true;
+
+    try {
+      const response = await fetch("/api/session", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: session.session_id }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "動画視聴の開始に失敗しました。");
+      }
+
+      const activeSession = { ...session, ...data };
+      localStorage.setItem(
+        "youtube_experiment_session",
+        JSON.stringify(activeSession)
+      );
+      setSession(activeSession);
+      setStartingPlayback(false);
+      await sendLog("viewing_started", {
+        viewing_started_at: activeSession.started_at,
+      });
+      return true;
+    } catch (error) {
+      console.error(error);
+      safeCall(() => playerRef.current?.pauseVideo());
+      audioUnlockedRef.current = false;
+      setAudioUnlocked(false);
+      setStartingPlayback(false);
+      alert(error.message || "動画視聴の開始に失敗しました。");
+      return false;
+    } finally {
+      viewingStartRequestRef.current = false;
+    }
   }
 
   function flashPlaybackPulse(nextPulse) {
@@ -976,11 +1034,16 @@ export default function WatchPage() {
                 className={styles.startOverlay}
                 onClick={unlockAudio}
                 type="button"
+                disabled={startingPlayback}
                 aria-label="タップして音声付きで開始"
               >
                 <span className={styles.startIcon} aria-hidden="true">▶</span>
-                <span className={styles.startText}>タップして開始</span>
-                <span className={styles.startSub}>音声が流れます</span>
+                <span className={styles.startText}>
+                  {startingPlayback ? "開始準備中..." : "タップして開始"}
+                </span>
+                <span className={styles.startSub}>
+                  このタップから視聴時間を計測します
+                </span>
               </button>
             )}
 
