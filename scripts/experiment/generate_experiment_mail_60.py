@@ -52,6 +52,7 @@ def generate_mail(
 {participant_id.strip()}
 
 動画視聴時間:{short_video_minutes}分
+
 【重要】各課題では，このメールに記載された動画視聴時間を確認し，同じ時間を選択してください．
 
 実験1（ショート動画条件）
