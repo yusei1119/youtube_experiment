@@ -51,7 +51,7 @@ def generate_mail(
     return f"""実験参加者ID:
 {participant_id.strip()}
 
-動画視聴時間:{short_video_minutes}分
+ショート動画視聴時間:{short_video_minutes}分
 
 【重要】各課題では，このメールに記載された動画視聴時間を確認し，同じ時間を選択してください．
 
