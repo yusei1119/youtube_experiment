@@ -68,7 +68,7 @@ class ExperimentMail60UI:
         )
         participant_entry.grid(row=1, column=0, sticky="ew", pady=(6, 22))
 
-        ttk.Label(controls, text="動画視聴時間", style="Section.TLabel").grid(
+        ttk.Label(controls, text="ショート動画視聴時間", style="Section.TLabel").grid(
             row=2, column=0, sticky="w"
         )
         time_frame = ttk.Frame(controls)
