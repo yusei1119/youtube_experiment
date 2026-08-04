@@ -59,6 +59,12 @@ from scripts.analysis.analyze_nasa_tlx import (
     repeated_measures_anova,
     safe_shapiro,
 )
+from scripts.analysis.writing_text_metrics import (
+    TEXT_METRIC_LABELS,
+    TEXT_OVERALL_METRICS,
+    TEXT_QUESTION_MEASURES,
+    calculate_text_metrics,
+)
 
 
 CATEGORIES = ("general", "content", "inquiry", "emotion", "summary")
@@ -96,6 +102,15 @@ EVALUATION_OVERALL_METRICS_60 = (
     "Mean_min_chars_reached_sec",
     "Mean_latency_sec",
 )
+TEXT_METRIC_LABELS_JA = {
+    "Mean_content_word_count": "内容語数",
+    "Mean_lexical_diversity_mattr": "語彙多様性(MATTR)",
+    "Mean_content_word_ratio": "内容語比率",
+    "Mean_causal_marker_rate": "因果・精緻化表現率",
+    "Mean_reflection_marker_rate": "内省表現率",
+    "Mean_specificity_marker_rate": "具体性マーカー率",
+    "Mean_sentence_length_tokens": "1文あたり形態素数",
+}
 METRIC_LABELS = {
     "Total_task_sec": "Total task time",
     "Total_answer_sec": "Total answer time",
@@ -107,6 +122,7 @@ METRIC_LABELS = {
     "Mean_min_chars_reached_sec": "Time to minimum length (5-question mean)",
     "Mean_latency_sec": "Time to first input (5-question mean)",
 }
+METRIC_LABELS.update(TEXT_METRIC_LABELS)
 for _category in CATEGORIES:
     for _measure in MEASURES:
         _unit_label = {
@@ -276,6 +292,137 @@ def extract_writing_metrics(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFram
             result, export_snake_name
         ).combine_first(export_mean).combine_first(derived_mean)
     return result, pd.concat(question_frames, ignore_index=True)
+
+
+def add_text_content_metrics(
+    data: pd.DataFrame,
+    question_data: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """本文指標を質問別に計算し、参加者ごとの5問平均を追加する。"""
+    result = data.copy()
+    questions = question_data.copy()
+    calculated = pd.DataFrame(
+        [calculate_text_metrics(value) for value in questions["answer_text"]],
+        index=questions.index,
+    )
+    questions[list(TEXT_QUESTION_MEASURES)] = calculated[list(TEXT_QUESTION_MEASURES)]
+    overall_by_measure = dict(zip(TEXT_QUESTION_MEASURES, TEXT_OVERALL_METRICS))
+    for measure, overall_metric in overall_by_measure.items():
+        means = questions.groupby("source_row", observed=True)[measure].mean()
+        result[overall_metric] = result["source_row"].map(means)
+    return result, questions
+
+
+def _permutation_spearman_p(
+    duration_steps: np.ndarray,
+    values: np.ndarray,
+    rng: np.random.Generator,
+    permutations: int = 9_999,
+) -> tuple[float, float]:
+    """Tie-aware Spearman rho and reproducible two-sided permutation p-value."""
+    valid = np.isfinite(duration_steps) & np.isfinite(values)
+    x = np.asarray(duration_steps[valid], dtype=float)
+    y = np.asarray(values[valid], dtype=float)
+    if len(x) < 3 or np.ptp(x) == 0 or np.ptp(y) == 0:
+        return (0.0, 1.0) if len(x) >= 3 and np.ptp(y) == 0 else (np.nan, np.nan)
+    ranked_x = stats.rankdata(x)
+    ranked_y = stats.rankdata(y)
+    ranked_x -= ranked_x.mean()
+    ranked_y -= ranked_y.mean()
+    denominator = math.sqrt(float(np.dot(ranked_x, ranked_x) * np.dot(ranked_y, ranked_y)))
+    observed = float(np.dot(ranked_x, ranked_y) / denominator)
+    as_extreme = 0
+    for _ in range(permutations):
+        permuted = rng.permutation(ranked_y)
+        candidate = float(np.dot(ranked_x, permuted) / denominator)
+        as_extreme += abs(candidate) >= abs(observed) - 1e-15
+    return observed, (as_extreme + 1) / (permutations + 1)
+
+
+def text_content_trend_analysis(
+    data: pd.DataFrame,
+    question_data: pd.DataFrame,
+    seed: int,
+    permutations: int = 9_999,
+) -> pd.DataFrame:
+    """質問variantを中心化してから、参加者単位の順序傾向を検定する。"""
+    questions = question_data.copy()
+    source_to_duration = data.set_index("source_row")["viewing_duration"]
+    questions["viewing_duration"] = questions["source_row"].map(source_to_duration)
+    duration_steps_by_source = (
+        data.set_index("source_row")["viewing_duration"]
+        .astype(str).str.removesuffix("min").astype(float) / 5.0
+    )
+    rows = []
+    for metric_index, (measure, overall_metric) in enumerate(
+        zip(TEXT_QUESTION_MEASURES, TEXT_OVERALL_METRICS)
+    ):
+        values = pd.to_numeric(questions[measure], errors="coerce")
+        variant_mean = questions.assign(_value=values).groupby(
+            "question_id", observed=True
+        )["_value"].transform("mean")
+        adjusted_name = f"{measure}_question_variant_adjusted"
+        questions[adjusted_name] = values - variant_mean + values.mean()
+        participant_scores = questions.groupby("source_row", observed=True)[
+            adjusted_name
+        ].mean()
+        common = participant_scores.index.intersection(duration_steps_by_source.index)
+        x = duration_steps_by_source.loc[common].to_numpy(float)
+        y = participant_scores.loc[common].to_numpy(float)
+        rho, p_raw = _permutation_spearman_p(
+            x, y, np.random.default_rng(seed + metric_index), permutations
+        )
+        if len(x) >= 2 and np.ptp(x) > 0 and np.ptp(y) > 0:
+            slope, intercept, slope_low, slope_high = stats.theilslopes(y, x, alpha=0.95)
+        else:
+            slope = intercept = slope_low = slope_high = np.nan
+        rows.append({
+            "metric": overall_metric,
+            "label_en": METRIC_LABELS[overall_metric],
+            "n": len(common),
+            "score_basis": "question-variant-centered five-question mean",
+            "test": "two-sided permutation Spearman trend",
+            "rho": rho,
+            "p_raw": p_raw,
+            "theil_sen_slope_per_5min": slope,
+            "theil_sen_intercept": intercept,
+            "slope_ci95_low": slope_low,
+            "slope_ci95_high": slope_high,
+        })
+    result = pd.DataFrame(rows)
+    result["p_holm_across_text_metrics"] = holm_adjust(result["p_raw"].tolist())
+    result["significance_holm"] = result["p_holm_across_text_metrics"].map(p_stars)
+    return result
+
+
+def text_content_category_trend_analysis(
+    data: pd.DataFrame,
+    question_data: pd.DataFrame,
+    seed: int,
+    permutations: int = 9_999,
+) -> pd.DataFrame:
+    """5質問カテゴリ×7本文指標の探索的な傾向検定を行う。"""
+    frames = []
+    for category_index, category in enumerate(CATEGORIES):
+        category_rows = question_data[question_data["category"] == category]
+        current = text_content_trend_analysis(
+            data, category_rows, seed + 100 * (category_index + 1), permutations
+        )
+        current.insert(0, "category", category)
+        current.insert(1, "category_label", CATEGORY_LABELS[category])
+        current["score_basis"] = "question-variant-centered category answer"
+        frames.append(current)
+    result = pd.concat(frames, ignore_index=True)
+    result = result.drop(
+        columns=["p_holm_across_text_metrics", "significance_holm"]
+    )
+    result["p_holm_across_35_category_tests"] = holm_adjust(
+        result["p_raw"].tolist()
+    )
+    result["significance_holm_35"] = result[
+        "p_holm_across_35_category_tests"
+    ].map(p_stars)
+    return result
 
 
 def load_source(path: Path, id_pattern: str) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -525,11 +672,12 @@ def independent_analysis(
     data: pd.DataFrame,
     group_column: str,
     group_order: tuple[str, ...],
+    metrics: tuple[str, ...] = ALL_METRICS,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     present = tuple(group for group in group_order if group in set(data[group_column]))
     omnibus_rows = []
     pairwise_rows = []
-    for metric in ALL_METRICS:
+    for metric in metrics:
         groups = [
             pd.to_numeric(data.loc[data[group_column] == group, metric], errors="coerce").dropna().to_numpy(float)
             for group in present
@@ -598,9 +746,13 @@ def independent_analysis(
     return omnibus, pd.DataFrame(pairwise_rows)
 
 
-def pairwise_wide_table(pairwise: pd.DataFrame, conditions: tuple[str, ...]) -> pd.DataFrame:
+def pairwise_wide_table(
+    pairwise: pd.DataFrame,
+    conditions: tuple[str, ...],
+    metrics: tuple[str, ...] = ALL_METRICS,
+) -> pd.DataFrame:
     rows = []
-    for metric in ALL_METRICS:
+    for metric in metrics:
         row: dict[str, str | float] = {"metric": metric, "label_en": METRIC_LABELS[metric]}
         metric_rows = pairwise[pairwise["metric"] == metric]
         for condition_1, condition_2 in combinations(conditions, 2):
@@ -723,7 +875,10 @@ def write_report_90(
 def write_report_60(
     data: pd.DataFrame,
     descriptives: pd.DataFrame,
+    omnibus: pd.DataFrame,
     pairwise: pd.DataFrame,
+    text_trends: pd.DataFrame,
+    text_category_trends: pd.DataFrame,
     output: Path,
 ) -> None:
     lines = [
@@ -776,6 +931,69 @@ def write_report_60(
                     if not match.empty and int(match.iloc[0]["n"]) > 0 else "NA"
                 )
             lines.append(f"| {duration} | " + " | ".join(values) + " |")
+    lines.extend([
+        "", "## 回答本文の内容指標", "",
+        "本文はJanomeで形態素解析した。各値は5問の平均。MATTRは内容語の20語窓、"
+        "各表現率は100形態素あたりである。これらは文章の特徴を表す再現可能な代理指標であり、"
+        "回答の正しさや動画との整合性を自動採点するものではない。", "",
+        "| 視聴時間 | 内容語数 | 語彙多様性 | 内容語比率 | 因果表現率 | 内省表現率 | 具体性率 | 文長 |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
+    ])
+    for duration in DURATIONS_60:
+        if not (data["viewing_duration"] == duration).any():
+            continue
+        values = []
+        for metric in TEXT_OVERALL_METRICS:
+            match = descriptives[
+                (descriptives["viewing_duration"] == duration)
+                & (descriptives["metric"] == metric)
+            ]
+            values.append(f"{float(match.iloc[0]['mean']):.3f}" if not match.empty else "NA")
+        lines.append(f"| {duration} | " + " | ".join(values) + " |")
+
+    lines.extend([
+        "", "### 視聴時間の順序傾向検定", "",
+        "質問variantごとの平均差を中心化した後、参加者ごとの5問平均に対して、"
+        "視聴時間（5段階刻み）とのSpearman相関を置換検定した。7指標をHolm補正した。", "",
+        "| 指標 | rho | 5分あたりTheil–Sen傾き | p（未補正） | p（Holm） |",
+        "|---|---:|---:|---:|---:|",
+    ])
+    for row in text_trends.itertuples(index=False):
+        lines.append(
+            f"| {TEXT_METRIC_LABELS_JA[row.metric]} | {row.rho:.3f} "
+            f"| {row.theil_sen_slope_per_5min:.3f} | {row.p_raw:.4g} "
+            f"| {row.p_holm_across_text_metrics:.4g} {row.significance_holm} |"
+        )
+
+    text_omnibus = omnibus[omnibus["metric"].isin(TEXT_OVERALL_METRICS)]
+    lines.extend([
+        "", "### 6群のオムニバス検定", "",
+        "| 指標 | 検定 | 効果量 | p（未補正） |",
+        "|---|---|---:|---:|",
+    ])
+    for row in text_omnibus.itertuples(index=False):
+        lines.append(
+            f"| {TEXT_METRIC_LABELS_JA[row.metric]} | {row.test} "
+            f"| {row.effect:.3f} ({row.effect_name}) | {row.p_raw:.4g} |"
+        )
+    category_significant = text_category_trends[
+        text_category_trends["p_holm_across_35_category_tests"] < 0.05
+    ]
+    lines.extend(["", "### 質問カテゴリ別の探索", ""])
+    if category_significant.empty:
+        lines.append(
+            "5カテゴリ×7指標（35検定）を同様に調べたが、Holm補正後に有意な傾向はなかった。"
+        )
+    else:
+        lines.extend([
+            "| 質問カテゴリ | 指標 | rho | p（Holm, 35検定） |",
+            "|---|---|---:|---:|",
+        ])
+        for row in category_significant.itertuples(index=False):
+            lines.append(
+                f"| {row.category_label} | {TEXT_METRIC_LABELS_JA[row.metric]} "
+                f"| {row.rho:.3f} | {row.p_holm_across_35_category_tests:.4g} |"
+            )
     significant = pairwise[
         pd.to_numeric(pairwise["p_holm_within_metric"], errors="coerce") < 0.05
     ]
@@ -901,6 +1119,7 @@ def analyze_60(args: argparse.Namespace) -> None:
     included_rows = set(data["source_row"].astype(int))
     report.loc[report["source_row"].isin(included_rows), ["included", "reason"]] = [True, "included"]
     question_data = question_data[question_data["source_row"].isin(included_rows)].copy()
+    data, question_data = add_text_content_metrics(data, question_data)
     has_new_evaluation_data = (
         "Mean_chars_after_min" in data
         and data["Mean_chars_after_min"].notna().any()
@@ -921,18 +1140,29 @@ def analyze_60(args: argparse.Namespace) -> None:
         data,
         "viewing_duration",
         DURATIONS_60,
-        (*ALL_METRICS, *available_evaluation_metrics),
+        (*ALL_METRICS, *available_evaluation_metrics, *TEXT_OVERALL_METRICS),
     )
     variant_descriptives = question_variant_descriptives(
         question_data,
         "viewing_duration",
-        (*MEASURES, *available_evaluation_measures),
+        (*MEASURES, *available_evaluation_measures, *TEXT_QUESTION_MEASURES),
     )
-    omnibus, pairwise = independent_analysis(data, "viewing_duration", DURATIONS_60)
-    pairwise_table = pairwise_wide_table(pairwise, DURATIONS_60)
+    analysis_metrics = (
+        *ALL_METRICS,
+        *available_evaluation_metrics,
+        *TEXT_OVERALL_METRICS,
+    )
+    omnibus, pairwise = independent_analysis(
+        data, "viewing_duration", DURATIONS_60, analysis_metrics
+    )
+    pairwise_table = pairwise_wide_table(pairwise, DURATIONS_60, analysis_metrics)
+    text_trends = text_content_trend_analysis(data, question_data, args.seed)
+    text_category_trends = text_content_category_trend_analysis(
+        data, question_data, args.seed
+    )
     analysis_columns = [
         "participant_id", "viewing_duration", *ALL_METRICS,
-        *available_evaluation_metrics,
+        *available_evaluation_metrics, *TEXT_OVERALL_METRICS,
     ]
     save_csv(report.sort_values("source_row"), output / "writing_60_filter_report.csv")
     save_csv(data[analysis_columns], output / "writing_60_analysis_data.csv")
@@ -942,6 +1172,11 @@ def analyze_60(args: argparse.Namespace) -> None:
     save_csv(omnibus, output / "writing_60_omnibus_results.csv")
     save_csv(pairwise, output / "writing_60_pairwise_results.csv")
     save_csv(pairwise_table, output / "writing_60_pairwise_pvalue_table.csv")
+    save_csv(text_trends, output / "writing_60_text_content_trend_results.csv")
+    save_csv(
+        text_category_trends,
+        output / "writing_60_text_content_category_trend_results.csv",
+    )
     plot_metric_panels(
         data, OVERALL_METRICS, "viewing_duration", DURATIONS_60,
         output / "writing_60_overall_metrics.png", args.dpi, args.seed,
@@ -955,8 +1190,16 @@ def analyze_60(args: argparse.Namespace) -> None:
             args.dpi, args.seed, f"Writing Task 60: Question-level {measure}",
             pairwise,
         )
+    plot_metric_panels(
+        data, TEXT_OVERALL_METRICS, "viewing_duration", DURATIONS_60,
+        output / "writing_60_text_content_metrics.png", args.dpi, args.seed,
+        "Writing Task 60: Text-content Indicators", pairwise,
+    )
     report_path = output / "writing_60_report.md"
-    write_report_60(data, descriptives, pairwise, report_path)
+    write_report_60(
+        data, descriptives, omnibus, pairwise, text_trends,
+        text_category_trends, report_path,
+    )
     print(f"  saved: {report_path}")
     print(f"60版: B系有効回答 {len(data)}名")
 

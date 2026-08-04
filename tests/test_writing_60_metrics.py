@@ -5,6 +5,7 @@ import unittest
 import pandas as pd
 
 from scripts.analysis import analyze_writing_task as writing
+from scripts.analysis.writing_text_metrics import calculate_text_metrics
 from scripts.export.export_writing_60_responses import flatten_long, flatten_wide
 
 
@@ -108,6 +109,79 @@ class Writing60MetricAnalysisTests(unittest.TestCase):
         self.assertEqual(question_data.iloc[4]["chars_after_min"], 5)
         self.assertNotIn("active_writing_sec", question_data)
         self.assertNotIn("idle_after_writing_started_sec", question_data)
+
+    def test_japanese_text_content_metrics_are_interpretable(self) -> None:
+        metrics = calculate_text_metrics(
+            "私は場面の変化を強く感じた。そのため、自分の価値観を考え直した。"
+        )
+
+        self.assertGreater(metrics["content_word_count"], 0)
+        self.assertGreater(metrics["lexical_diversity_mattr"], 0)
+        self.assertLessEqual(metrics["lexical_diversity_mattr"], 1)
+        self.assertGreater(metrics["causal_marker_rate"], 0)
+        self.assertGreater(metrics["reflection_marker_rate"], 0)
+        self.assertGreater(metrics["sentence_length_tokens"], 0)
+
+    def test_text_metrics_are_added_as_five_question_means(self) -> None:
+        rows = []
+        for index, category in enumerate(writing.CATEGORIES):
+            rows.append({
+                "participant_id": "B001",
+                "source_row": 2,
+                "viewing_duration": "5min",
+                "category": category,
+                "question_id": f"{category}_v1",
+                "answer_text": "私は映像について考えた。そのため印象が変わった。",
+            })
+        data = pd.DataFrame([{
+            "participant_id": "B001",
+            "source_row": 2,
+            "viewing_duration": "5min",
+        }])
+
+        result, questions = writing.add_text_content_metrics(
+            data, pd.DataFrame(rows)
+        )
+
+        self.assertEqual(len(questions), 5)
+        self.assertTrue(result.loc[0, "Mean_content_word_count"] > 0)
+        self.assertAlmostEqual(
+            result.loc[0, "Mean_reflection_marker_rate"],
+            questions["reflection_marker_rate"].mean(),
+        )
+
+    def test_text_trend_adjusts_the_seven_metric_family(self) -> None:
+        data_rows = []
+        question_rows = []
+        for participant_index in range(12):
+            source_row = participant_index + 2
+            duration = f"{5 * (participant_index // 2 + 1)}min"
+            data_rows.append({
+                "participant_id": f"B{participant_index + 1:03d}",
+                "source_row": source_row,
+                "viewing_duration": duration,
+            })
+            for category_index, category in enumerate(writing.CATEGORIES):
+                row = {
+                    "source_row": source_row,
+                    "category": category,
+                    "question_id": f"{category}_v{category_index % 3 + 1}",
+                }
+                for measure_index, measure in enumerate(
+                    writing.TEXT_QUESTION_MEASURES
+                ):
+                    row[measure] = participant_index + measure_index / 10
+                question_rows.append(row)
+
+        result = writing.text_content_trend_analysis(
+            pd.DataFrame(data_rows), pd.DataFrame(question_rows), seed=7,
+            permutations=99,
+        )
+
+        self.assertEqual(len(result), 7)
+        self.assertEqual(set(result["n"]), {12})
+        self.assertTrue((result["rho"] > 0.98).all())
+        self.assertTrue((result["p_holm_across_text_metrics"] <= 1).all())
 
 
 if __name__ == "__main__":

@@ -53,3 +53,28 @@ wide形式の回答CSVでは、上記の数値指標の5問平均を
 `mean_*`列で出力する。分析結果では質問別の値を
 `writing_60_question_data_long.csv`、5問平均を
 `writing_60_analysis_data.csv`と`writing_60_descriptive_stats.csv`へ出力する。
+
+### 回答本文の内容指標
+
+詳細な定義、計算式、辞書語、検定方法、解釈上の注意は
+[`writing_60_text_content_metrics.md`](writing_60_text_content_metrics.md)を参照する。
+
+60分実験では、回答本文をJanomeで形態素解析し、質問ごとに次の指標も算出する。
+
+- `content_word_count`: 名詞・動詞・形容詞・副詞の数
+- `lexical_diversity_mattr`: 内容語基本形のMATTR（窓幅20語。20語未満はTTR）
+- `content_word_ratio`: 全形態素に占める内容語の割合
+- `causal_marker_rate`: 因果・精緻化表現の100形態素あたり出現数
+- `reflection_marker_rate`: 思考・感情・自己言及表現の100形態素あたり出現数
+- `specificity_marker_rate`: 固有名詞・数・括弧付き語の100形態素あたり出現数
+- `sentence_length_tokens`: 1文あたり形態素数
+
+参加者ごとの5問平均は`writing_60_analysis_data.csv`へ、質問別の値は
+`writing_60_question_data_long.csv`へ出力する。視聴時間の傾向検定では、質問variant
+ごとの平均差を中心化した参加者別5問平均と視聴時間のSpearman相関を置換検定し、
+7指標をHolm補正する。結果は`writing_60_text_content_trend_results.csv`に保存する。
+加えて、5質問カテゴリ×7指標の探索結果を35検定まとめてHolm補正し、
+`writing_60_text_content_category_trend_results.csv`へ保存する。
+
+これらは語彙・表現上の特徴を示す代理指標であり、回答内容の正しさや、実際に
+視聴した動画との意味的整合性を自動採点するものではない。
