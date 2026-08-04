@@ -140,6 +140,9 @@ python -m scripts.analysis.analyze_post_survey --study all
 A系の全分析で共通利用する有効採用者は
 [`data/corrections/analysis_participants.csv`](data/corrections/analysis_participants.csv)
 の`included`列で編集します。`true`は採用、`false`は除外です。
+B系60分実験の全分析で共通除外する参加者は
+[`data/corrections/analysis_excluded_participants_60.csv`](data/corrections/analysis_excluded_participants_60.csv)
+に記載します。
 YouTubeログの補正は
 [`data/corrections/youtube_participant_corrections.csv`](data/corrections/youtube_participant_corrections.csv)
 と

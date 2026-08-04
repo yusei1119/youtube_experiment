@@ -1,4 +1,4 @@
-"""A系実験の共通採用者リストを読み込み、分析対象を絞り込む。"""
+"""実験の共通採用・除外リストを読み込み、分析対象を絞り込む。"""
 
 from __future__ import annotations
 
@@ -12,13 +12,14 @@ import pandas as pd
 TRUE_VALUES = {"1", "true", "yes", "y", "include", "included", "採用"}
 FALSE_VALUES = {"0", "false", "no", "n", "exclude", "excluded", "除外"}
 REQUIRED_COLUMNS = {"participant_id", "included", "note"}
+EXCLUSION_REQUIRED_COLUMNS = {"participant_id", "note"}
 
 
 def canonicalize_participant_id(value: object) -> str:
     """全半角・大小文字・ゼロ埋めの表記ずれを吸収する。"""
     text = unicodedata.normalize("NFKC", str(value)).strip().upper()
-    match = re.fullmatch(r"A0*(\d+)", text)
-    return f"A{int(match.group(1)):03d}" if match else text
+    match = re.fullmatch(r"([AB])0*(\d+)", text)
+    return f"{match.group(1)}{int(match.group(2)):03d}" if match else text
 
 
 def normalize_participant_id(value: object) -> str:
@@ -84,3 +85,52 @@ def filter_selected_participants(
         report.loc[mask, "included"] = False
         report.loc[mask, "reason"] = reason
     return data.loc[selected].copy()
+
+
+def load_participant_exclusions(
+    path: Path,
+    id_pattern: str = r"B\d{3}",
+) -> tuple[pd.DataFrame, set[str]]:
+    """除外対象CSVを検証し、標準化済み一覧とID集合を返す。"""
+    if not path.is_file():
+        raise FileNotFoundError(f"除外者CSVが見つかりません: {path}")
+    exclusions = pd.read_csv(
+        path, dtype=str, keep_default_na=False, encoding="utf-8-sig"
+    )
+    exclusions.columns = exclusions.columns.astype(str).str.strip()
+    missing = sorted(EXCLUSION_REQUIRED_COLUMNS - set(exclusions.columns))
+    if missing:
+        raise ValueError(f"{path}: 必須列がありません: {missing}")
+    exclusions = exclusions[["participant_id", "note"]].copy()
+    exclusions["participant_id"] = exclusions["participant_id"].map(
+        canonicalize_participant_id
+    )
+    invalid = exclusions.loc[
+        ~exclusions["participant_id"].str.fullmatch(id_pattern, na=False),
+        "participant_id",
+    ].tolist()
+    if invalid:
+        raise ValueError(f"{path}: 不正な参加者IDがあります: {invalid}")
+    duplicates = exclusions.loc[
+        exclusions["participant_id"].duplicated(keep=False), "participant_id"
+    ].unique()
+    if len(duplicates):
+        raise ValueError(f"{path}: 参加者IDが重複しています: {duplicates.tolist()}")
+    exclusions = exclusions.sort_values("participant_id").reset_index(drop=True)
+    return exclusions, set(exclusions["participant_id"].astype(str))
+
+
+def filter_excluded_participants(
+    data: pd.DataFrame,
+    report: pd.DataFrame,
+    excluded_ids: set[str],
+    reason: str = "excluded_by_participant_exclusions",
+) -> pd.DataFrame:
+    """指定IDを候補行から除外し、既存レポートに理由を記録する。"""
+    excluded = data["participant_id"].isin(excluded_ids)
+    excluded_rows = set(data.loc[excluded, "source_row"].astype(int))
+    if excluded_rows:
+        mask = report["source_row"].isin(excluded_rows)
+        report.loc[mask, "included"] = False
+        report.loc[mask, "reason"] = reason
+    return data.loc[~excluded].copy()

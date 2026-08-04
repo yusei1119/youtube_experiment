@@ -47,7 +47,9 @@ from scripts.common.plotting import (
 )
 from scripts.common.participant_selection import (
     canonicalize_participant_id,
+    filter_excluded_participants,
     filter_selected_participants,
+    load_participant_exclusions,
     load_participant_selection,
 )
 
@@ -128,6 +130,12 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("data/corrections/analysis_participants.csv"),
         help="90版で共通利用するA系採用者CSV",
+    )
+    parser.add_argument(
+        "--participant-exclusions-60",
+        type=Path,
+        default=Path("data/corrections/analysis_excluded_participants_60.csv"),
+        help="60版で共通利用するB系除外者CSV",
     )
     return parser.parse_args()
 
@@ -1004,6 +1012,9 @@ def analyze_60(args: argparse.Namespace) -> None:
     mark_report(report, invalid_duration_rows, "invalid_viewing_duration")
     candidate_rows = report.loc[report["included"], "source_row"]
     candidates = raw[raw["source_row"].isin(candidate_rows)].copy()
+    candidates["participant_id"] = normalize_participant_id(candidates[id_column])
+    _, excluded_ids = load_participant_exclusions(args.participant_exclusions_60)
+    candidates = filter_excluded_participants(candidates, report, excluded_ids)
     candidate_durations = durations.loc[candidates.index]
     scores, items, invalid_scores = score_rows(
         candidates, mapping, id_column, "60", candidate_durations

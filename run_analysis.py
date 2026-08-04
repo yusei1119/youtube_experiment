@@ -37,6 +37,9 @@ DEFAULT_YOUTUBE_SESSION_CORRECTIONS = (
 DEFAULT_PARTICIPANT_SELECTION = (
     ROOT / "data/corrections/analysis_participants.csv"
 )
+DEFAULT_PARTICIPANT_EXCLUSIONS_60 = (
+    ROOT / "data/corrections/analysis_excluded_participants_60.csv"
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -79,6 +82,12 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=DEFAULT_PARTICIPANT_SELECTION,
         help="YouTube・NASA・記述課題・事後アンケートで共通利用するA系採用者CSV",
+    )
+    parser.add_argument(
+        "--participant-exclusions-60",
+        type=Path,
+        default=DEFAULT_PARTICIPANT_EXCLUSIONS_60,
+        help="YouTube・NASA・記述課題・事後アンケートで共通利用するB系除外者CSV",
     )
     parser.add_argument(
         "--nasa-90", type=Path, default=LOCAL_EXPORTS / "nasa_task_90_results.csv"
@@ -471,6 +480,10 @@ def main() -> None:
                     args.participant_selection,
                     raw_dir / "analysis_participants.csv",
                 ),
+                "participant_exclusions_60": (
+                    args.participant_exclusions_60,
+                    raw_dir / "analysis_excluded_participants_60.csv",
+                ),
                 "post_survey_90": (args.post_survey_90, raw_dir / "post_survey_90.csv"),
                 "post_survey_60": (args.post_survey_60, raw_dir / "post_survey_60.csv"),
             }
@@ -492,6 +505,9 @@ def main() -> None:
                 raw_dir / "youtube_session_corrections.csv"
             )
             participant_selection = raw_dir / "analysis_participants.csv"
+            participant_exclusions_60 = (
+                raw_dir / "analysis_excluded_participants_60.csv"
+            )
             post_survey_90 = raw_dir / "post_survey_90.csv"
             post_survey_60 = raw_dir / "post_survey_60.csv"
             youtube_summary_base = analysis_dir / "youtube/youtube_analysis_summary.csv"
@@ -538,6 +554,8 @@ def main() -> None:
                     youtube_summary,
                     "--duration-input",
                     nasa_60,
+                    "--participant-exclusions",
+                    participant_exclusions_60,
                     "--output-dir",
                     analysis_dir / "youtube/b_participants",
                     "--exact-output-dir",
@@ -554,6 +572,8 @@ def main() -> None:
                     nasa_60,
                     "--participant-selection",
                     participant_selection,
+                    "--participant-exclusions-60",
+                    participant_exclusions_60,
                     "--output-dir",
                     analysis_dir / "nasa_tlx",
                     "--exact-output-dir",
@@ -572,6 +592,8 @@ def main() -> None:
                     nasa_90,
                     "--participant-selection",
                     participant_selection,
+                    "--participant-exclusions-60",
+                    participant_exclusions_60,
                     "--output-dir",
                     analysis_dir / "writing",
                     "--exact-output-dir",
@@ -588,6 +610,8 @@ def main() -> None:
                     post_survey_60,
                     "--participant-selection",
                     participant_selection,
+                    "--participant-exclusions-60",
+                    participant_exclusions_60,
                     "--output-dir",
                     analysis_dir / "post_survey",
                     "--exact-output-dir",

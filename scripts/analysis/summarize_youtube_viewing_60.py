@@ -29,6 +29,11 @@ import numpy as np
 import pandas as pd
 
 from scripts.common.output_versioning import create_run_output_dir
+from scripts.common.participant_selection import (
+    canonicalize_participant_id,
+    filter_excluded_participants,
+    load_participant_exclusions,
+)
 from scripts.analysis.summarize_youtube_viewing import (
     METRICS,
     PLOT_METRICS,
@@ -70,6 +75,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-id", default=None, help=argparse.SUPPRESS)
     parser.add_argument("--exact-output-dir", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--id-pattern", default=r"B\d+")
+    parser.add_argument(
+        "--participant-exclusions",
+        type=Path,
+        default=Path("data/corrections/analysis_excluded_participants_60.csv"),
+        help="60分実験で共通利用するB系除外者CSV",
+    )
     parser.add_argument("--dpi", type=int, default=220)
     parser.add_argument("--seed", type=int, default=42)
     return parser.parse_args()
@@ -140,6 +151,7 @@ def load_youtube_participants(
     id_pattern: str,
     duration_mapping: pd.DataFrame,
     conflicting_ids: set[str],
+    excluded_ids: set[str],
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     if not path.exists():
         raise FileNotFoundError(
@@ -160,13 +172,16 @@ def load_youtube_participants(
     )
     source = source.copy()
     source.insert(0, "source_row", np.arange(2, len(source) + 2))
-    source["participant_id"] = source["participant_id"].astype("string").str.strip()
+    source["participant_id"] = source["participant_id"].map(
+        canonicalize_participant_id
+    ).astype("string")
     valid_id = source["participant_id"].str.fullmatch(id_pattern, na=False)
     report = source[["source_row", "participant_id", "session_id", "session_minutes"]].copy()
     report["included"] = False
     report["reason"] = np.where(valid_id, "candidate", "invalid_participant_id")
 
     candidates = source.loc[valid_id].copy()
+    candidates = filter_excluded_participants(candidates, report, excluded_ids)
     for metric in METRICS:
         candidates[metric] = pd.to_numeric(candidates[metric], errors="coerce")
     candidates["session_minutes"] = pd.to_numeric(
@@ -478,11 +493,13 @@ def main() -> None:
     mapping, mapping_report, conflicting_ids = load_duration_mapping(
         args.duration_input, args.id_pattern
     )
+    _, excluded_ids = load_participant_exclusions(args.participant_exclusions)
     data, youtube_report = load_youtube_participants(
         args.youtube_input,
         args.id_pattern,
         mapping,
         conflicting_ids,
+        excluded_ids,
     )
     save_csv(mapping_report, args.output_dir / "youtube_b_duration_mapping_report.csv")
     save_csv(youtube_report, args.output_dir / "youtube_b_filter_report.csv")

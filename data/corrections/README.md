@@ -25,6 +25,15 @@ YouTube・NASA-TLX・記述課題・実験後アンケートのA系分析は、�
 変更後はリポジトリ直下で`python run_analysis.py`を実行すると、全分析に反映
 されます。各実行ではこのCSVも`raw/analysis_participants.csv`へ保存されます。
 
+## B系60分実験の共通除外者
+
+YouTube・NASA-TLX・記述課題・実験後アンケートのB系分析は、
+`analysis_excluded_participants_60.csv`に記載した参加者をすべて除外します。
+
+- 2026-08-04: B077、B085、B089を無効データとして除外
+- 各分析のfilter reportに`excluded_by_participant_exclusions`と記録
+- 一括分析時は`raw/analysis_excluded_participants_60.csv`に入力を保存
+
 ## 2026-07-29 YouTube 10分視聴ログの採用・除外補正
 
 - 対象: Supabase由来のYouTube視聴ログ

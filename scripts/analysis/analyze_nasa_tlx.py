@@ -43,7 +43,9 @@ from scripts.common.plotting import (
 )
 from scripts.common.participant_selection import (
     canonicalize_participant_id,
+    filter_excluded_participants,
     filter_selected_participants,
+    load_participant_exclusions,
     load_participant_selection,
 )
 
@@ -118,6 +120,12 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("data/corrections/analysis_participants.csv"),
         help="90版で共通利用するA系採用者CSV",
+    )
+    parser.add_argument(
+        "--participant-exclusions-60",
+        type=Path,
+        default=Path("data/corrections/analysis_excluded_participants_60.csv"),
+        help="60版で共通利用するB系除外者CSV",
     )
     return parser.parse_args()
 
@@ -653,10 +661,18 @@ def analyze_90(
     print(pairwise_table[display_columns].to_string(index=False))
 
 
-def analyze_60(path: Path, root: Path, duplicate_policy: str, dpi: int, seed: int) -> None:
+def analyze_60(
+    path: Path,
+    root: Path,
+    duplicate_policy: str,
+    dpi: int,
+    seed: int,
+    excluded_ids: set[str],
+) -> None:
     output = root / "nasa_60"
     output.mkdir(parents=True, exist_ok=True)
     df, report = load_base(path, r"B\d+")
+    df = filter_excluded_participants(df, report, excluded_ids)
     ensure_columns(df, {"viewing_duration"}, path)
     df["viewing_duration"] = df["viewing_duration"].astype("string").str.strip().str.lower()
     valid_condition = df["viewing_duration"].isin(DURATION_ORDER_60)
@@ -715,7 +731,15 @@ def main() -> None:
             included_ids,
         )
     if args.study in ("60", "all"):
-        analyze_60(args.input_60, args.output_dir, args.duplicate_policy, args.dpi, args.seed)
+        _, excluded_ids = load_participant_exclusions(args.participant_exclusions_60)
+        analyze_60(
+            args.input_60,
+            args.output_dir,
+            args.duplicate_policy,
+            args.dpi,
+            args.seed,
+            excluded_ids,
+        )
 
 
 if __name__ == "__main__":

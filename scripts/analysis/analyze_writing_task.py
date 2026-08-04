@@ -45,7 +45,9 @@ from scripts.common.plotting import (
 )
 from scripts.common.participant_selection import (
     canonicalize_participant_id,
+    filter_excluded_participants,
     filter_selected_participants,
+    load_participant_exclusions,
     load_participant_selection,
 )
 
@@ -151,6 +153,12 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=Path("data/corrections/analysis_participants.csv"),
         help="90版で共通利用するA系採用者CSV",
+    )
+    parser.add_argument(
+        "--participant-exclusions-60",
+        type=Path,
+        default=Path("data/corrections/analysis_excluded_participants_60.csv"),
+        help="60版で共通利用するB系除外者CSV",
     )
     return parser.parse_args()
 
@@ -867,6 +875,8 @@ def analyze_60(args: argparse.Namespace) -> None:
     output = args.output_dir / "writing_60"
     output.mkdir(parents=True, exist_ok=True)
     data, report = load_source(args.input_60, r"B\d+")
+    _, excluded_ids = load_participant_exclusions(args.participant_exclusions_60)
+    data = filter_excluded_participants(data, report, excluded_ids)
     ensure_columns(data, {"viewing_duration"}, args.input_60)
     data["viewing_duration"] = data["viewing_duration"].astype("string").str.strip().str.lower()
     valid_duration = data["viewing_duration"].isin(DURATIONS_60)
